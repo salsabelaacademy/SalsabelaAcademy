@@ -1,0 +1,3 @@
+- [i18n language normalization](i18n-lang-norm.md) — i18n.language returns "en-US" not "en"; always split("-")[0] before DB queries.
+- [API no-cache setup](api-no-cache.md) — app.set("etag",false) + Cache-Control:no-store middleware required to prevent 304 stale responses on API routes.
+- [Managed schema migration policy](schema-migration-policy.md) — rehearse fresh migrations, but use reviewed schema diff and Publish flow for Replit production.

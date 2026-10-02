@@ -1,0 +1,31 @@
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import React from 'react';
+import {renderToString} from 'react-dom/server';
+import {Router,Route} from 'wouter';
+import {createInstance} from 'i18next';
+import {I18nextProvider} from 'react-i18next';
+import {ServerLanguageProvider} from '../client/src/hooks/use-language';
+import {ThemeProvider} from '../client/src/hooks/use-theme';
+import {AuthProvider} from '../client/src/hooks/use-auth';
+import {resources} from '../client/src/lib/i18n';
+import Home from '../client/src/pages/Home';
+import Courses from '../client/src/pages/Courses';
+import CourseDetails from '../client/src/pages/CourseDetails';
+import About from '../client/src/pages/About';
+import Pricing from '../client/src/pages/Pricing';
+import Contact from '../client/src/pages/Contact';
+import Blog from '../client/src/pages/Blog';
+import BlogPost from '../client/src/pages/BlogPost';
+import PublicPage from '../client/src/pages/PublicPages';
+import Application from '../client/src/pages/Application';
+import NotFound from '../client/src/pages/not-found';
+export async function renderPublic(path:string,lang:'en'|'ar',data?:any,courses?:any[]){
+ const i18n=createInstance();await i18n.init({showSupportNotice:false,resources,lng:lang,interpolation:{escapeValue:false}});
+ const query=new QueryClient({defaultOptions:{queries:{staleTime:60000,retry:false}}});
+ if(courses)query.setQueryData(['/api/courses'],courses);
+ if(path.startsWith('/courses/'))query.setQueryData(['/api/courses/:id',path.slice(9)],courses?.find(c=>String(c.id)===path.slice(9))||null);
+ if(path==='/blog')query.setQueryData(['/api/posts',lang],data||[]);
+ if(path.startsWith('/blog/')&&data)query.setQueryData(['/api/posts/slug',path.slice(6),lang],data);
+ const page=path==='/'?<Home/>:path==='/courses'||path==='/programs'?<Courses/>:path.startsWith('/courses/')?<Route path="/courses/:id"><CourseDetails/></Route>:path==='/pricing'?<Pricing/>:path==='/about'?<About/>:path==='/how-it-works'?<PublicPage/>:path==='/contact'?<Contact/>:path==='/apply'?<Application/>:path==='/blog'?<Blog/>:path.startsWith('/blog/')&&data?<BlogPost/>:<NotFound/>;
+ return renderToString(<QueryClientProvider client={query}><I18nextProvider i18n={i18n}><Router ssrPath={(lang==='ar'?'/ar':'')+(path==='/'&&lang==='ar'?'':path)} base={lang==='ar'?'/ar':''}><ServerLanguageProvider language={lang}><ThemeProvider><AuthProvider>{page}</AuthProvider></ThemeProvider></ServerLanguageProvider></Router></I18nextProvider></QueryClientProvider>);
+}

@@ -1,0 +1,4 @@
+ALTER TABLE "integration_jobs" ADD COLUMN "generation" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE "integration_classroom_links" ADD CONSTRAINT "integration_classroom_links_enrollment_id_enrollments_id_fk" FOREIGN KEY ("enrollment_id") REFERENCES "public"."enrollments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "integration_drive_resources" ADD CONSTRAINT "integration_drive_resources_material_id_materials_id_fk" FOREIGN KEY ("material_id") REFERENCES "public"."materials"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "integration_oauth_states" ADD CONSTRAINT "integration_oauth_states_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
