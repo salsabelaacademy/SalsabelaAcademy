@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { resolve } from 'node:path';
 
 // Optional local photos only: never request an external URL at runtime/build.
-const variants=['courses','pricing','journal','journey','contact'] as const;
+const variants=['courses','pricing','journal','journey','contact','about','apply'] as const;
 const directory=resolve('client/public/images');
 const manifest: Record<string,{src:string;width:number;height:number}>={};
 await mkdir(directory,{recursive:true});
@@ -21,4 +21,4 @@ for(const variant of variants){
  manifest[variant]={src:'/images/'+stem+'-optimized.webp',width:metadata.width!,height:metadata.height!};
 }
 await writeFile('client/src/lib/page-backgrounds.json',JSON.stringify(manifest,null,2)+'\n');
-console.log(`Local page backgrounds prepared: ${Object.keys(manifest).length}/5. Other pages retain the local mosque photo.`);
+console.log(`Local page backgrounds prepared: ${Object.keys(manifest).length}/7. Other pages retain the local mosque photo.`);

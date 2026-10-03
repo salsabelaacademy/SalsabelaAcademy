@@ -28,17 +28,14 @@ export default function Integrations() {
   const [lesson, setLesson] = useState({ studentId: "", programId: "", title: "", startsAt: "", endsAt: "", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [edit, setEdit] = useState<Row | null>(null), [recovery, setRecovery] = useState<Row | null>(null), [zoomId, setZoomId] = useState("");
   const [link, setLink] = useState({ enrollmentId: "", courseId: "" });
-  const [drive, setDrive] = useState({ unitId: "", title: "", url: "" }), [inspection, setInspection] = useState<Row | null>(null);
-  const [assignment, setAssignment] = useState({ enrollmentId: "", materialId: "" }), [removeId, setRemoveId] = useState("");
-  const [assignments, setAssignments] = useState<Row[]>([]);
   const [initializing, setInitializing] = useState(true);
   const date = (s?: string) => s ? new Date(s).toLocaleString(i18n.language) : tr("never");
   const errorText = (code: string) => t(`integrations.errors.${code}`, { defaultValue: tr("errors.internal_error") });
   async function reload() {
-    const [c, j, s, d, e, cat, l, a, mail] = await Promise.all([api("/admin/integrations"), api("/admin/integrations/jobs"), api("/admin/integrations/sessions"), api("/dashboard/admin"), api("/enrollments"), api("/admin/curriculum"), api("/admin/integrations/classroom/links"), api("/admin/materials/assignments"), api("/admin/notifications/status")]);
-    setAssignments(a);
+    const [c, j, s, d, e, l, mail] = await Promise.all([api("/admin/integrations"), api("/admin/integrations/jobs"), api("/admin/integrations/sessions"), api("/dashboard/admin"), api("/enrollments"), api("/admin/integrations/classroom/links"), api("/admin/notifications/status")]);
+    const {programs}=await api("/portal");
     setNotification(mail);
-    setConnections(c); setJobs(j); setSessions(s); setStudents(d.users?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog(cat); setLinks(l);
+    setConnections(c); setJobs(j); setSessions(s); setStudents(d.users?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog({programs,units:[],materials:[]}); setLinks(l);
   }
   useEffect(() => { if (!loading && user?.role !== "admin") navigate(user ? getDashboardPath(user.role) : "/login"); }, [loading, user, navigate]);
   useEffect(() => {
@@ -115,20 +112,6 @@ export default function Integrations() {
           <Field label={tr("enrollment")}><select required className={selectClass} value={link.enrollmentId} onChange={e => setLink({ ...link, enrollmentId: e.target.value })}><option value="">{tr("choose")}</option>{enrollmentOptions}</select></Field>
           <Field label={tr("course")}><select required className={selectClass} value={link.courseId} onChange={e => setLink({ ...link, courseId: e.target.value })}><option value="">{tr("choose")}</option>{courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><Button disabled={busy}>{tr("link")}</Button>
         </form><h3 className="font-semibold">{tr("links")}</h3>{!links.length && <p>{tr("empty")}</p>}{links.map(l => <p key={l.enrollment_id}>#{l.enrollment_id} → {l.course_id} · {tr(l.state)} {l.error && errorText(l.error)}</p>)}
-      </Panel>
-      <Panel title={tr("drive")}><p className="text-sm">{tr("driveNote")}</p>
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); void run(() => api("/admin/integrations/drive/attach", "POST", drive)); }}>
-          <Field label={tr("unit")}><select required className={selectClass} value={drive.unitId} onChange={e => setDrive({ ...drive, unitId: e.target.value })}><option value="">{tr("choose")}</option>{catalog.units.map((u: Row) => <option key={u.id} value={u.id}>{u.title}</option>)}</select></Field>
-          <Field label={tr("titleLabel")}><Input required maxLength={200} value={drive.title} onChange={e => setDrive({ ...drive, title: e.target.value })} /></Field>
-          <Field label={tr("driveUrl")}><Input required value={drive.url} onChange={e => { setDrive({ ...drive, url: e.target.value }); setInspection(null); }} /></Field>
-          <div className="flex flex-wrap items-end gap-2"><Button type="button" variant="outline" disabled={busy || !drive.url} onClick={() => run(async () => setInspection(await api("/admin/integrations/drive/inspect", "POST", { url: drive.url })))}>{tr("inspect")}</Button><Button disabled={busy || !inspection || inspection.public}>{tr("attach")}</Button></div>
-          {inspection && <p role="status" className="sm:col-span-2">{inspection.name} — {tr(inspection.public ? "publicWarning" : "private")}</p>}
-        </form>
-        <form className="grid gap-4 border-t pt-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); void run(() => api("/admin/materials/assign", "POST", assignment)); }}>
-          <Field label={tr("enrollment")}><select required className={selectClass} value={assignment.enrollmentId} onChange={e => setAssignment({ ...assignment, enrollmentId: e.target.value })}><option value="">{tr("choose")}</option>{enrollmentOptions}</select></Field>
-          <Field label={tr("material")}><select required className={selectClass} value={assignment.materialId} onChange={e => setAssignment({ ...assignment, materialId: e.target.value })}><option value="">{tr("choose")}</option>{catalog.materials.map((m: Row) => <option key={m.id} value={m.id}>{m.title}</option>)}</select></Field><Button disabled={busy}>{tr("assign")}</Button>
-        </form>
-        <form className="flex flex-wrap items-end gap-3 border-t pt-4" onSubmit={e => { e.preventDefault(); if (window.confirm(tr("confirmRemove"))) void run(() => api(`/admin/materials/assignments/${removeId}`, "DELETE")); }}><Field label={tr("assignmentId")}><select required className={selectClass} value={removeId} onChange={e => setRemoveId(e.target.value)}><option value="">{tr("choose")}</option>{assignments.map(a => <option key={a.id} value={a.id}>#{a.id} — {a.name} — {a.title}</option>)}</select></Field><Button variant="outline" disabled={busy || !removeId}>{tr("remove")}</Button></form>
       </Panel>
     </div>
   </section>;

@@ -1,5 +1,5 @@
 import backgrounds from '@/lib/page-backgrounds.json';
-type Variant='courses'|'pricing'|'journal'|'journey'|'contact';
+type Variant='courses'|'pricing'|'journal'|'journey'|'contact'|'about'|'apply';
 /** Local photography fades into the surrounding surface; no external requests. */
 export function PageBackdrop({variant='courses'}:{variant?:Variant}) {
  const images=backgrounds as Record<string,{src:string;width:number;height:number}>;

@@ -1,4 +1,4 @@
-import { pgTable, text, bigserial, serial, timestamp, varchar, integer, boolean, uniqueIndex, index, check, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, bigserial, serial, timestamp, varchar, integer, boolean, uniqueIndex, index, check, uuid, date } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -71,3 +71,8 @@ export const academyTestimonials = pgTable('academy_testimonials', {id:serial('i
 
 export const pushSubscriptions = pgTable('push_subscriptions', {id:serial('id').primaryKey(),userId:integer('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),endpoint:text('endpoint').notNull().unique(),p256dh:text('p256dh').notNull(),auth:text('auth').notNull(),language:text('language').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull().defaultNow()},t=>[index('push_subscription_user_idx').on(t.userId),check('push_language_check',sql`${t.language} IN ('ar','en')`)]);
 export const pushDeliveries = pgTable('push_deliveries', {id:bigserial('id',{mode:'number'}).primaryKey(),notificationId:integer('notification_id').notNull().references(()=>notifications.id,{onDelete:'cascade'}),subscriptionId:integer('subscription_id').notNull().references(()=>pushSubscriptions.id,{onDelete:'cascade'}),attempts:integer('attempts').notNull().default(0),status:text('status').notNull().default('pending'),nextAttempt:timestamp('next_attempt',{withTimezone:true}).notNull().defaultNow(),lastError:text('last_error')},t=>[uniqueIndex('push_delivery_unique').on(t.notificationId,t.subscriptionId),index('push_pending_idx').on(t.nextAttempt).where(sql`${t.status}='pending'`)]);
+
+export const accountDetails = pgTable("account_details", {
+ userId: integer("user_id").primaryKey().references(()=>users.id,{onDelete:"cascade"}),
+ dateOfBirth:date("date_of_birth",{mode:"string"}), city:varchar("city",{length:100}).notNull().default(""),bio:varchar("bio",{length:1000}).notNull().default(""),phone:varchar("phone",{length:30}).notNull().default(""),country:varchar("country",{length:100}).notNull().default(""),timezone:varchar("timezone",{length:80}).notNull().default("UTC"),preferredLanguage:varchar("preferred_language",{length:2}).notNull().default("en"),updatedAt:timestamp("updated_at").notNull().defaultNow()
+});

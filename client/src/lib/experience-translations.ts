@@ -22,7 +22,7 @@ export const experienceTranslations = {
     "step3": "Activate your student account",
     "step3Body": "After acceptance, open your email invitation and set your password. Your dashboard becomes your place for lessons and updates.",
     "step4": "Join, practise, and move forward",
-    "step4Body": "Open your upcoming lesson, join Zoom when the meeting is ready, and return to your dashboard for homework and feedback.",
+    "step4Body": "Open your upcoming lesson, join Zoom when the meeting is ready, and return to your dashboard for lesson reports and feedback.",
     "howHelp": "Already received an invitation?",
     "howHelpBody": "Use the link in your email to activate your account, then sign in. Contact the academy if the link has expired.",
     "loginTitle": "Welcome back",
@@ -44,13 +44,13 @@ export const experienceTranslations = {
     "basicFeatures": [
       "Focus on one course and a clear starting point",
       "Guided practice of the essential skills",
-      "A next-step task after your lesson",
+      "Clear next steps discussed during your lesson",
       "Lesson feedback in your dashboard"
     ],
     "standardFeatures": [
       "Focus on correction and skill development",
       "Review earlier work alongside new practice",
-      "Homework matched to the topics covered",
+      "Focused practice together during the lesson",
       "Track your feedback and attendance"
     ],
     "premiumFeatures": [
@@ -98,7 +98,7 @@ export const experienceTranslations = {
     "step3": "فعّل حسابك كطالب",
     "step3Body": "بعد القبول، افتح الدعوة في بريدك وأنشئ كلمة المرور. من لوحتك تتابع الدروس والرسائل والتحديثات.",
     "step4": "احضر وتدرّب وتقدّم",
-    "step4Body": "افتح حصتك القادمة وانضم إلى Zoom عندما يصبح الاجتماع جاهزًا، ثم راجع واجبك وملاحظات معلمك من اللوحة.",
+    "step4Body": "افتح حصتك القادمة وانضم إلى Zoom عندما يصبح الاجتماع جاهزًا، ثم راجع تقارير حصصك وملاحظات معلمك من اللوحة.",
     "howHelp": "وصلتك دعوة التفعيل بالفعل؟",
     "howHelpBody": "افتح رابط الدعوة في بريدك لتفعيل الحساب ثم سجّل الدخول. تواصل معنا إذا انتهت صلاحية الرابط.",
     "loginTitle": "مرحبًا بعودتك",
@@ -120,13 +120,13 @@ export const experienceTranslations = {
     "basicFeatures": [
       "التركيز على دورة واحدة ونقطة بداية واضحة",
       "تدريب موجّه على المهارات الأساسية",
-      "مهمة تدريبية للخطوة التالية بعد الدرس",
+      "خطوات واضحة تتفق عليها خلال الحصة",
       "ملاحظات الحصة داخل لوحتك"
     ],
     "standardFeatures": [
       "التركيز على التصحيح وتطوير المهارة",
       "مراجعة ما سبق مع التدريب الجديد",
-      "واجب يناسب الموضوعات التي درستها",
+      "تدريب مركز أثناء الحصة",
       "متابعة الملاحظات وسجل الحضور"
     ],
     "premiumFeatures": [

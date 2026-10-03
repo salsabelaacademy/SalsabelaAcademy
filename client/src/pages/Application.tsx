@@ -1,3 +1,4 @@
+import { PageBackdrop } from '@/components/PageBackdrop';
 import {useCourses} from '@/hooks/use-courses';
 import { getCountries, getCountryCallingCode, isSupportedCountry, validateCountryPhone, type CountryCode } from '@shared/phone';
 import { useEffect, useState, type FormEvent } from "react";
@@ -112,10 +113,10 @@ export default function Application({
   }
   return (
     <PublicShell>
-      <section className={contact ? "p4-section restore-contact-page" : "p4-section p4-form-page"}>
-        <p className="p4-eyebrow">{tr("brand")}</p>
+      <section className="academy-apply-intro academy-hero-surface"><PageBackdrop variant={contact?'contact':'apply'} /><div className="container-wide"><p className="p4-eyebrow">{tr("brand")}</p>
         <h1>{tr(contact ? "contact" : "applicationTitle")}</h1>
-        <p>{tr(contact ? "contactIntro" : "applicationIntro")}</p>
+        <p>{tr(contact ? "contactIntro" : "applicationIntro")}</p></div></section>
+      <section className={contact ? "p4-section restore-contact-page" : "p4-section p4-form-page"}>
         {!contact && !sent && <p className="academy-application-note">{t("admission.applicationNote")}</p>}
         <div className={contact ? "restore-contact-layout" : ""}>
         {contact && <aside className="restore-contact-aside"><h2>{t("restore.contactHelp")}</h2><p>{t("restore.contactHelpBody")}</p>

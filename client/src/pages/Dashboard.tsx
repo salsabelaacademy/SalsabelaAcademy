@@ -1,3 +1,4 @@
+import { DashboardRecords, AuditEntry } from '@/components/DashboardRecords';
 import { programLabel } from '@/lib/program-label';
 import { StudentsWorkspace } from '@/components/StudentsWorkspace';
 import { AcademySchedule } from '@/components/AcademySchedule';
@@ -15,7 +16,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
-import { StudentLiveResources } from "@/components/StudentLiveResources";
+
 type Field = {
   key: string;
   label?: string;
@@ -136,7 +137,7 @@ function ActionForm({
   );
 }
 const adminDashboardSections = ["overview","applications","students","lessons","attendance","messages","notifications","contactInbox","audit","profile","settings"];
-const studentDashboardSections = ["overview","lessons","programs","homework","attendance","messages","notifications","profile","settings"];
+const studentDashboardSections = ["overview","lessons","programs","attendance","messages","notifications","profile","settings"];
 const dashboardSections = Array.from(new Set([...adminDashboardSections, ...studentDashboardSections]));
 export default function Dashboard() {
   const { t } = useTranslation(),
@@ -278,25 +279,23 @@ export default function Dashboard() {
       ) : !data ? (
         <BrandLoading compact />
       ) : (
-        <ContentTransition identity={location+':'+tab+':'+language}><Suspense fallback={<BrandLoading compact />}><div className="p4-stack">
+        <ContentTransition identity={location+':'+tab+':'+language}><Suspense fallback={<BrandLoading compact />}><div className={"p4-stack dash-section dash-section-"+tab}>
           {admin && tab === 'blog' && <div className={location === '/admin' ? 'dash-embedded dash-blog' : 'dash-embedded dash-editor'} data-no-reveal>{location === '/admin' ? <AdminArticles /> : <ArticleEditor key={location} />}</div>}
           {admin && tab === 'integrations' && <div className="dash-embedded dash-integrations" data-no-reveal><AdminIntegrations /></div>}
           {tab === "overview" && <DashboardOverview admin={admin} user={user} data={data} timezone={tz} refreshKey={revision} onTab={key=>{setTab(key);navigate(getDashboardPath(user.role)+'?tab='+encodeURIComponent(key));}} />}
           {tab === "profile" && <DashboardProfile onSaved={reload} />}
           {tab === "applications" && admin && (
             <>
-              <h2>{tr("applications")}</h2>
-              {data.applications.map((a: any) => (
+              <div className="dash-page-heading"><h2>{tr("applications")}</h2><p>{t('refinement.applicationsHint')}</p></div>
+              <DashboardRecords items={data.applications} searchText={a=>[a.name,a.email,a.learning_goals,a.current_experience].join(' ')} status={a=>a.status} focusKind="application">{(a: any) => (
                 <article data-search-target={"application:"+a.id} key={a.id} className="p4-card p4-stack">
                   <h3>{a.name}</h3>
                   <p dir="ltr">{a.email}</p>
-                  <span>{status(a.status)}</span>
+                  <span className="p4-badge">{status(a.status)}</span>
                   <p>{a.learning_goals}</p>
                   <p>{a.current_experience}</p>
-                  <p>
-                    {a.availability} · {a.timezone}
-                  </p>
-                  <ActionForm
+                  {(a.availability||a.timezone)&&<p>{[a.availability,a.timezone].filter(Boolean).join(' · ')}</p>}
+                  <details className="dash-record-details"><summary>{t("refinement.details")}</summary><ActionForm
                     onDone={reload}
                     action={(v) =>
                       request("/admin/applications/" + a.id, "PATCH", v)
@@ -368,10 +367,9 @@ export default function Dashboard() {
                         })
                       }
                     />
-                  </details>
+                  </details></details>
                 </article>
-              ))}
-              {!data.applications.length && <p>{tr("empty")}</p>}
+              )}</DashboardRecords>              {!data.applications.length && <p>{tr("empty")}</p>}
             </>
           )}
           {tab === "students" && admin && (
@@ -452,12 +450,6 @@ export default function Dashboard() {
                         label="editLesson"
                         fields={[
                           {
-                            key: "homework",
-                            type: "textarea",
-                            value: l.homework || "",
-                            optional: true,
-                          },
-                          {
                             key: "feedback",
                             type: "textarea",
                             value: l.feedback || "",
@@ -523,11 +515,6 @@ export default function Dashboard() {
                     </>
                   ) : (
                     <>
-                      {l.homework && (
-                        <p>
-                          {tr("homework")}: {l.homework}
-                        </p>
-                      )}
                       {l.feedback && (
                         <p>
                           {tr("feedback")}: {l.feedback}
@@ -553,188 +540,21 @@ export default function Dashboard() {
               {!data.enrollments.length && <p>{tr("empty")}</p>}
             </>
           )}
-          {tab === "curriculum" && (
-            <>
-              <h2>{tr("curriculum")}</h2>
-              {admin && (
-                <>
-                  <div className="p4-grid">
-                    <section className="p4-card">
-                      <h3>{tr("newModule")}</h3>
-                      <ActionForm
-                        label="create"
-                        onDone={reload}
-                        action={(v) => request("/portal/modules", "POST", v)}
-                        fields={[
-                          {
-                            key: "programId",
-                            label: "program",
-                            options: options(data.programs, (p) =>
-                              program(p.id),
-                            ),
-                          },
-                          { key: "title" },
-                        ]}
-                      />
-                    </section>
-                    <section className="p4-card">
-                      <h3>{tr("newUnit")}</h3>
-                      <ActionForm
-                        label="create"
-                        onDone={reload}
-                        action={(v) => request("/portal/units", "POST", v)}
-                        fields={[
-                          {
-                            key: "moduleId",
-                            label: "module",
-                            options: options(data.modules, (m) => m.title),
-                          },
-                          { key: "title" },
-                          { key: "body", type: "textarea" },
-                        ]}
-                      />
-                    </section>
-                    <section className="p4-card">
-                      <h3>{tr("assign")}</h3>
-                      <ActionForm
-                        label="assign"
-                        onDone={reload}
-                        action={(v) => request("/portal/assign", "POST", v)}
-                        fields={[
-                          {
-                            key: "enrollmentId",
-                            label: "enrollment",
-                            options: options(
-                              data.enrollments.filter(
-                                (e: any) => e.status === "active",
-                              ),
-                              (e) =>
-                                person(e.student_id) +
-                                " · " +
-                                program(e.program_id),
-                            ),
-                          },
-                          {
-                            key: "unitId",
-                            label: "unit",
-                            options: options(data.units, (u) => u.title),
-                          },
-                        ]}
-                      />
-                    </section>
-                  </div>
-                  <Link className="p4-text-link" href="/admin/integrations">
-                    {tr("linked")}
-                  </Link>
-                </>
-              )}
-              {data.units.map((u: any) => (
-                <article className="p4-card" key={u.id}>
-                  <h3>{u.title}</h3>
-                  <p className="whitespace-pre-wrap">{u.body}</p>
-                  {u.completion_status && (
-                    <span>{status(u.completion_status)}</span>
-                  )}
-                </article>
-              ))}
-              {admin &&
-                data.progress.map((p: any) => (
-                  <article className="p4-card" key={p.id}>
-                    <h3>
-                      {data.units.find((u: any) => u.id === p.unit_id)?.title}
-                    </h3>
-                    <p>
-                      {person(
-                        data.enrollments.find(
-                          (e: any) => e.id === p.enrollment_id,
-                        )?.student_id,
-                      )}
-                    </p>
-                    <ActionForm
-                      onDone={reload}
-                      action={(v) =>
-                        request("/admin/progress/" + p.id, "PATCH", v)
-                      }
-                      fields={[
-                        {
-                          key: "completionStatus",
-                          label: "progress",
-                          value: p.completion_status,
-                          options: [
-                            "not_started",
-                            "in_progress",
-                            "completed",
-                          ].map((k) => [k, status(k)]),
-                        },
-                      ]}
-                    />
-                  </article>
-                ))}
-              {!data.units.length && <p>{tr("empty")}</p>}
-              {!admin && (
-                <>
-                  {data.materials.map((m: any) => (
-                    <article className="p4-card" key={m.id}>
-                      <h3>{m.title}</h3>
-                      <button
-                        className="p4-button"
-                        disabled={busy}
-                        onClick={async () => {
-                          setBusy(true);
-                          try {
-                            const d = await request(
-                              "/portal/materials/" + m.id + "/open",
-                            );
-                            window.open(d.url, "_blank", "noopener,noreferrer");
-                          } catch (e) {
-                            setNotice("failed");
-                          } finally {
-                            setBusy(false);
-                          }
-                        }}
-                      >
-                        {t("integrations.open")}
-                      </button>
-                    </article>
-                  ))}
-                  <StudentLiveResources timezone={tz} refreshKey={revision} />
-                </>
-              )}
-            </>
-          )}
-          {tab === "homework" && (
-            <>
-              <h2>{tr("homework")}</h2>
-              {data.lessons
-                .filter((l: any) => l.homework || l.feedback)
-                .map((l: any) => (
-                  <article className="p4-card" data-search-target={"homework:"+l.id} key={l.id}>
-                    <h3>{l.title}</h3>
-                    <p>{l.homework}</p>
-                    <p>{l.feedback}</p>
-                  </article>
-                ))}
-              {!data.lessons.some((l: any) => l.homework || l.feedback) && (
-                <p>{tr("empty")}</p>
-              )}
-            </>
-          )}
           {tab === "attendance" && (
             <>
-              <h2>{tr("attendance")}</h2>
-              {data.attendance.map((a: any) => (
+              <div className="dash-page-heading"><h2>{tr("attendance")}</h2><p>{t('refinement.attendanceHint')}</p></div>
+              <DashboardRecords items={data.attendance} searchText={a=>[person(a.student_id),date(a.session_date),status(a.status)].join(' ')} status={a=>a.status} focusKind="attendance">{(a: any) => (
                 <article className="p4-card" data-search-target={"attendance:"+a.id} key={a.id}>
                   <h3>{admin ? person(a.student_id) : tr("attendance")}</h3>
                   <p>{date(a.session_date)}</p>
                   <span className="p4-badge">{status(a.status)}</span>
                 </article>
-              ))}
-              {!data.attendance.length && <p>{tr("empty")}</p>}
+              )}</DashboardRecords>              {!data.attendance.length && <p>{tr("empty")}</p>}
             </>
           )}
           {tab === "messages" && (
             <>
-              <h2>{tr("messages")}</h2>
+              <div className="dash-page-heading"><h2>{tr("messages")}</h2><p>{t('refinement.messagesHint')}</p></div>
               <section className="p4-card">
                 <ActionForm
                   label="send"
@@ -754,7 +574,7 @@ export default function Dashboard() {
                   ]}
                 />
               </section>
-              {data.messages.map((m: any) => (
+              <DashboardRecords items={data.messages} searchText={m=>[m.subject,m.body,m.sender_name,m.recipient_name].join(' ')} status={m=>m.recipient_id===user.id?'received':'sent'} focusKind="message">{(m: any) => (
                 <article className="p4-card" data-search-target={"message:"+m.id} key={m.id}>
                   <h3>{m.subject}</h3>
                   <p>
@@ -772,14 +592,14 @@ export default function Dashboard() {
                     </button>
                   )}
                 </article>
-              ))}
-            </>
+              )}</DashboardRecords>            </>
           )}
           {tab === "notifications" && (
             <>
-              <h2>{tr("notifications")}</h2>
-              {data.notifications.map((n: any) => (
+              <div className="dash-page-heading"><h2>{tr("notifications")}</h2><p>{t('refinement.notificationsHint')}</p></div>
+              <DashboardRecords items={[...data.notifications].sort((a:any,b:any)=>Number(Boolean(a.read_at))-Number(Boolean(b.read_at))||new Date(b.created_at).getTime()-new Date(a.created_at).getTime())} searchText={n=>[n.title.startsWith('notify_')?tr(n.title):n.title,n.body].join(' ')} status={n=>n.read_at?'read':'unread'} focusKind="notification">{(n: any) => (
                 <article className="p4-card" data-search-target={"notification:"+n.id} key={n.id}>
+                  <time>{date(n.created_at)}</time>
                   <h3>
                     {n.title.startsWith("notify_") ? tr(n.title) : n.title}
                   </h3>
@@ -794,45 +614,34 @@ export default function Dashboard() {
                     </button>
                   )}
                 </article>
-              ))}
-              {!data.notifications.length && <p>{tr("empty")}</p>}
+              )}</DashboardRecords>              {!data.notifications.length && <p>{tr("empty")}</p>}
             </>
           )}
           {tab === "contactInbox" && admin && (
             <>
-              <h2>{tr("contactInbox")}</h2>
-              {data.contacts.map((c: any) => (
+              <div className="dash-page-heading"><h2>{tr("contactInbox")}</h2><p>{t('refinement.contactHint')}</p></div>
+              <DashboardRecords items={data.contacts} searchText={c=>[c.subject,c.message,c.name,c.email].join(' ')} focusKind="contact">{(c: any) => (
                 <article className="p4-card" data-search-target={"contact:"+c.id} key={c.id}>
                   <h3>{c.subject}</h3>
                   <p>
                     {c.name} · {c.email}
                   </p>
                   <p className="whitespace-pre-wrap">{c.message}</p>
-                  <p>{date(c.created_at)}</p>
+                  <p>{date(c.created_at)}</p><a className="p4-text-link" href={"mailto:"+encodeURIComponent(c.email)}>{t("refinement.respond")}</a>
                 </article>
-              ))}
-              {!data.contacts.length && <p>{tr("empty")}</p>}
+              )}</DashboardRecords>              {!data.contacts.length && <p>{tr("empty")}</p>}
             </>
           )}
           {tab === "audit" && admin && (
             <>
-              <h2>{tr("audit")}</h2>
-              {data.audit.map((a: any) => (
-                <article className="p4-card" data-search-target={"audit:"+a.id} key={a.id}>
-                  <p>
-                    {a.name} · {date(a.created_at)}
-                  </p>
-                  <code dir="ltr" className="break-all">
-                    {a.action} {a.resource}
-                  </code>
-                </article>
-              ))}
+              <div className="dash-page-heading"><h2>{tr("audit")}</h2><p>{t('refinement.auditHint')}</p></div>
+              <DashboardRecords items={data.audit} searchText={a=>[a.name,a.action,a.resource,date(a.created_at)].join(' ')} focusKind="audit">{a=><AuditEntry key={a.id} entry={a} date={date}/>}</DashboardRecords>
               {!data.audit.length && <p>{tr("empty")}</p>}
             </>
           )}
           {tab === "settings" && (
             <>
-              <h2>{tr("settings")}</h2>
+              <div className="dash-page-heading"><h2>{tr("settings")}</h2><p>{t('refinement.settingsHint')}</p></div>
               {admin && <TestimonialManager />}
               <section className="p4-card">
                 {admin ? (

@@ -1,3 +1,4 @@
+import { PageBackdrop } from "@/components/PageBackdrop";
 import { FeatureIcon } from "@/components/FeatureIcon";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -15,8 +16,8 @@ export default function About() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-primary/10 via-white to-secondary/5 dark:from-primary/20 dark:via-slate-900 dark:to-secondary/10 relative overflow-hidden">
-        <div className="absolute inset-0 pattern-grid opacity-50" />
+      <section className="academy-hero-surface pt-32 pb-20 relative overflow-hidden">
+        <PageBackdrop variant="about" />
         <div className="container-wide relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div data-reveal>

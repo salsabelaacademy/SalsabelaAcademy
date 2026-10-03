@@ -1,3 +1,4 @@
+import { dateOfBirth } from '../shared/account-details';
 import { registerDashboardSearch } from "./dashboard-search";
 import { registerLessonFollowups } from './lesson-followup';
 import { registerPushRoutes } from "./push";
@@ -47,6 +48,12 @@ export const publicLimit: RequestHandler = run(async (req, res, next) => {
   next();
 });
 export function registerPortalRoutes(app: Express) {
+  app.use('/api', (req,res,next)=>{
+    if (/^\/(?:student\/drive-materials|materials|progress|admin\/(?:curriculum|materials|progress|integrations\/drive)|portal\/(?:modules|units|assign|materials|progress|curriculum))(?:\/|$)/.test(req.path)) {
+      return requireAuth(req.path.startsWith('/admin/')||req.path.startsWith('/portal/')?['admin']:['student'])(req,res,()=>res.status(410).json({code:'feature_disabled'}));
+    }
+    next();
+  });
   registerLessonFollowups(app);
   registerDashboardSearch(app);
   registerAvatars(app, publicLimit);
@@ -55,7 +62,8 @@ export function registerPortalRoutes(app: Express) {
     const user = (req as any).auth.user;
     const [account] = await rows("SELECT name,email,role,status,email_verified_at,created_at,last_login_at FROM users WHERE id=$1", [user.id]);
     const [profile] = user.role === "student" ? await rows("SELECT phone,country,timezone,preferred_language FROM student_profiles WHERE user_id=$1", [user.id]) : [];
-    res.json({ ...account, ...profile });
+    const [details] = await rows("SELECT date_of_birth::text,city,bio,phone,country,timezone,preferred_language FROM account_details WHERE user_id=$1",[user.id]);
+    res.set('Cache-Control','no-store').json({ ...account, ...details, ...profile });
   }));
   app.patch("/api/portal/account", requireAuth(["admin", "student"]), run(async (req, res) => {
     const user = (req as any).auth.user;
@@ -65,6 +73,9 @@ export function registerPortalRoutes(app: Express) {
       country: z.string().trim().max(100).optional(),
       timezone: z.string().max(80).refine(value => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }).optional(),
       preferredLanguage: z.enum(["ar", "en"]).optional(),
+      dateOfBirth: dateOfBirth.optional(),
+      city: z.string().trim().max(100).optional(),
+      bio: z.string().trim().max(1000).optional(),
     }).strict().parse(req.body);
     const connection = await pool.connect();
     try {
@@ -75,6 +86,9 @@ export function registerPortalRoutes(app: Express) {
          ON CONFLICT(user_id) DO UPDATE SET full_name=EXCLUDED.full_name,phone=COALESCE($3,student_profiles.phone),country=COALESCE($4,student_profiles.country),timezone=COALESCE($5,student_profiles.timezone),preferred_language=COALESCE($6,student_profiles.preferred_language)`,
         [user.id,payload.name,payload.phone ?? null,payload.country ?? null,payload.timezone ?? null,payload.preferredLanguage ?? null],
       );
+      await connection.query(`INSERT INTO account_details(user_id,date_of_birth,city,bio,phone,country,timezone,preferred_language) VALUES($1,$2,COALESCE($3,''),COALESCE($4,''),COALESCE($5,''),COALESCE($6,''),COALESCE($7,'UTC'),COALESCE($8,'en'))
+      ON CONFLICT(user_id) DO UPDATE SET date_of_birth=CASE WHEN $9 THEN $2 ELSE account_details.date_of_birth END,city=COALESCE($3,account_details.city),bio=COALESCE($4,account_details.bio),phone=COALESCE($5,account_details.phone),country=COALESCE($6,account_details.country),timezone=COALESCE($7,account_details.timezone),preferred_language=COALESCE($8,account_details.preferred_language),updated_at=now()`,
+      [user.id,payload.dateOfBirth??null,payload.city??null,payload.bio??null,payload.phone??null,payload.country??null,payload.timezone??null,payload.preferredLanguage??null,payload.dateOfBirth!==undefined]);
       await connection.query("COMMIT");
       res.json({ ok: true });
     } catch (error) { await connection.query("ROLLBACK"); throw error; }
@@ -209,6 +223,7 @@ export function registerPortalRoutes(app: Express) {
           : lessonRows.map(
               ({
                 private_admin_notes,
+                homework,
                 zoom_reference,
                 google_calendar_reference,
                 ...l
@@ -224,6 +239,7 @@ export function registerPortalRoutes(app: Express) {
         appointments: studentAppointments,
       };
       if (admin) {
+        base.profile = (await rows('SELECT timezone,preferred_language FROM account_details WHERE user_id=$1',[u.id]))[0] || {};
         const [
           applications,
           appointments,
@@ -246,10 +262,10 @@ export function registerPortalRoutes(app: Express) {
             "SELECT a.*,u.name FROM academy_audit a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.id DESC LIMIT 200",
           ),
           rows("SELECT * FROM academy_settings WHERE id=1"),
-          rows("SELECT * FROM materials"),
-          rows("SELECT * FROM curriculum_units ORDER BY sort_order,id"),
-          rows("SELECT * FROM curriculum_modules ORDER BY sort_order,id"),
-          rows("SELECT * FROM student_progress"),
+          Promise.resolve([]),
+          Promise.resolve([]),
+          Promise.resolve([]),
+          Promise.resolve([]),
           statuses(),
           rows(
             "SELECT count(*)::integer AS count FROM integration_jobs WHERE state IN ('failed','blocked','needs_review')",
@@ -265,7 +281,7 @@ export function registerPortalRoutes(app: Express) {
           units,
           modules,
           progress,
-          connections,
+          connections: connections.filter((c:any)=>c.provider!=='drive'),
         });
         base.stats = {
           newApplications: applications.filter((a) => a.status === "new")
@@ -290,18 +306,9 @@ export function registerPortalRoutes(app: Express) {
       } else {
         const [profile, units, materials, progress] = await Promise.all([
           rows("SELECT * FROM student_profiles WHERE user_id=$1", [u.id]),
-          rows(
-            `SELECT u.*,p.completion_status,p.id AS progress_id FROM curriculum_units u JOIN student_progress p ON p.unit_id=u.id JOIN enrollments e ON e.id=p.enrollment_id JOIN curriculum_modules m ON m.id=u.module_id WHERE e.student_id=$1 AND e.status='active' AND m.program_id=e.program_id`,
-            [u.id],
-          ),
-          rows(
-            `SELECT m.id,m.title FROM materials m JOIN assigned_materials a ON a.material_id=m.id JOIN enrollments e ON e.id=a.enrollment_id JOIN curriculum_units u ON u.id=m.unit_id JOIN curriculum_modules cm ON cm.id=u.module_id WHERE e.student_id=$1 AND e.status='active' AND cm.program_id=e.program_id AND m.file_url ~ '^https://' AND m.file_url !~ '^https://(drive|docs)[.]google[.]com/'`,
-            [u.id],
-          ),
-          rows(
-            "SELECT p.* FROM student_progress p JOIN enrollments e ON e.id=p.enrollment_id WHERE e.student_id=$1 AND e.status='active'",
-            [u.id],
-          ),
+          Promise.resolve([]),
+          Promise.resolve([]),
+          Promise.resolve([]),
         ]);
         const { internal_admin_notes, ...safe } = profile[0] || {};
         Object.assign(base, {
@@ -314,9 +321,7 @@ export function registerPortalRoutes(app: Express) {
               (l) =>
                 l.status === "scheduled" && new Date(l.starts_at) > new Date(),
             ).length,
-            completedUnits: progress.filter(
-              (p) => p.completion_status === "completed",
-            ).length,
+
           },
         });
       }
@@ -397,14 +402,13 @@ export function registerPortalRoutes(app: Express) {
     run(async (req, res) => {
       const v = z
         .object({
-          homework: z.string().max(5000),
           feedback: z.string().max(5000),
           privateNotes: z.string().max(5000),
           attendance: z
             .enum(["present", "absent", "late", "excused"])
             .optional(),
         })
-        .parse(req.body);
+        .strict().parse(req.body);
       const c = await pool.connect();
       try {
         await c.query("BEGIN");
@@ -418,8 +422,8 @@ export function registerPortalRoutes(app: Express) {
           return res.status(404).json({ code: "not_found" });
         }
         await c.query(
-          "UPDATE lessons SET homework=$2,feedback=$3,private_admin_notes=$4,attendance=COALESCE($5,attendance),updated_at=now() WHERE id=$1",
-          [l.id, v.homework, v.feedback, v.privateNotes, v.attendance || null],
+          "UPDATE lessons SET feedback=$2,private_admin_notes=$3,attendance=COALESCE($4,attendance),updated_at=now() WHERE id=$1",
+          [l.id, v.feedback, v.privateNotes, v.attendance || null],
         );
         if (v.attendance) {
           await c.query(

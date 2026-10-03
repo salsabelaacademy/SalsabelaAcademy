@@ -31,7 +31,7 @@ export function registerIntegrationRoutes(app: Express) {
       res.redirect("/admin/integrations?oauth=connected");
     } catch { res.redirect("/admin/integrations?oauth=error"); }
   });
-  router.get("/admin/integrations", requireAuth(["admin"]), async (_req, res) => res.json(await statuses()));
+  router.get("/admin/integrations", requireAuth(["admin"]), async (_req, res) => res.json((await statuses()).filter(c=>c.provider!=='drive')));
   router.post("/admin/integrations/:provider/connect", requireAuth(["admin"]), async (req, res) => {
     const p = providerSchema.parse(req.params.provider);
     if (p !== "zoom") return res.json({ url: await oauthStart(p, auth(req).user.id, auth(req).token) });

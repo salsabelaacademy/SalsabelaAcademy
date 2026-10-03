@@ -1,3 +1,4 @@
+import { getCountries } from '@shared/phone';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushPreferences } from './PushPreferences';
@@ -13,6 +14,9 @@ export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const tr = (key: string) => t('p4.' + key);
+  const detail=(key:string)=>t('refinement.'+key);
+  const regionNames=new Intl.DisplayNames([language],{type:'region'});
+  const countries=getCountries().map(code=>({code,name:regionNames.of(code)||code})).sort((a,b)=>a.name.localeCompare(b.name,language));
   const [account, setAccount] = useState<any>(null);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -67,7 +71,7 @@ export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
   }
   return <section className="dash-profile-page">
     <div className="dash-profile-banner"><span className="dash-profile-portrait"><AccountAvatar user={user} /></span><div><p>{tr('profile')}</p><h2>{user?.name}</h2><bdi>{user?.email}</bdi></div><span className="dash-profile-role"><ShieldCheck size={18} aria-hidden="true" />{tr(user?.role === 'admin' ? 'adminRole' : 'studentRole')}</span></div>
-    <p>{t('experience.profileIntro')}</p><section className="dash-panel dash-language-settings"><div><h2>{t('workspace.interfaceLanguage')}</h2><p>{t('workspace.languageHint')}</p></div><LanguageSwitcher /></section>
+    <p className="dash-profile-intro">{detail('profileHint')}</p><section className="dash-panel dash-language-settings"><div><h2>{t('workspace.interfaceLanguage')}</h2><p>{t('workspace.languageHint')}</p></div><LanguageSwitcher /></section>
     {account && <section className="dash-panel"><h2>{t('experience.accountSummary')}</h2><dl className="profile-summary">{[['status',tr('states.'+account.status)],['joined',account.created_at ? new Intl.DateTimeFormat(language,{dateStyle:'medium'}).format(new Date(account.created_at)) : '—'],['lastLogin',account.last_login_at ? new Intl.DateTimeFormat(language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(account.last_login_at)) : '—']].map(([key,value])=><div key={key}><dt>{t('experience.'+key)}</dt><dd>{value}</dd></div>)}<div><dt>{tr('email')}</dt><dd>{t('experience.'+(account.email_verified_at?'verified':'unverified'))}</dd></div></dl></section>}
     <section className="dash-panel dash-photo-settings"><div><h2>{tr('profilePhoto')}</h2><p>{tr('avatarHint')}</p></div><div className="p4-row"><input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label={tr('changePhoto')} hidden onChange={e => { const file = e.target.files?.[0]; if (file) void changeAvatar(file); }} /><button className="p4-button" disabled={imageBusy} onClick={() => fileInput.current?.click()}>{tr(imageBusy ? 'sending' : 'changePhoto')}</button>{user?.avatarUrl && <button className="p4-control" disabled={imageBusy} onClick={() => void changeAvatar()}>{tr('removePhoto')}</button>}</div>{imageMessage && <p role={imageMessage === 'saved' ? 'status' : 'alert'}>{tr(imageMessage)}</p>}</section>
     <div className="dash-panel"><h2><UserRound size={21} aria-hidden="true" /> {tr('personalDetails')}</h2>
@@ -75,12 +79,16 @@ export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
       {account && <form onSubmit={submit} className="dash-profile-form">
         <label>{tr('name')}<input name="name" defaultValue={account.name} autoComplete="name" minLength={2} maxLength={200} required /></label>
         <label>{tr('email')}<input value={account.email} readOnly type="email" aria-describedby="profile-email-hint" dir="ltr" /><small id="profile-email-hint">{tr('profileEmailHint')}</small></label>
-        {user?.role === 'student' && <>
+        <>
+          <label>{detail('dob')} <small>{detail('optional')}</small><input name="dateOfBirth" type="date" defaultValue={account.date_of_birth||''} min="1900-01-01" max={new Date().toISOString().slice(0,10)} autoComplete="bday" /></label>
+          <label>{detail('city')}<input name="city" defaultValue={account.city||''} autoComplete="address-level2" maxLength={100}/></label>
           <label>{tr('phone')}<input name="phone" type="tel" defaultValue={account.phone || ''} autoComplete="tel" maxLength={30} /></label>
-          <label>{tr('country')}<input name="country" defaultValue={account.country || ''} autoComplete="country-name" maxLength={100} /></label>
+          <label>{tr('country')}<select name="country" defaultValue={account.country||''} autoComplete="country"><option value="">{detail('optional')}</option>{account.country&&!countries.some(c=>c.code===account.country)&&<option value={account.country}>{account.country}</option>}{countries.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
           <label>{tr('timezone')}<select name="timezone" defaultValue={account.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone} dir="ltr" required>{Array.from(new Set([account.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,...((Intl as any).supportedValuesOf?.('timeZone') || ['UTC','Africa/Cairo'])])).map(zone=><option key={String(zone)} value={String(zone)}>{String(zone)}</option>)}</select><small>{tr('timezoneExample')}</small></label>
           <label>{tr('preferredLanguage')}<select name="preferredLanguage" defaultValue={account.preferred_language === 'ar' ? 'ar' : account.preferred_language === 'en' ? 'en' : language}><option value="ar">{tr('arabic')}</option><option value="en">{tr('english')}</option></select></label>
-        </>}
+        </>
+        <label className="dash-profile-bio">{detail('bio')}<textarea name="bio" defaultValue={account.bio||''} rows={4} maxLength={1000}/><small>{detail('bioHint')}</small></label>
+        <p className="dash-profile-privacy"><ShieldCheck size={17} aria-hidden/>{detail('profilePrivacy')}</p>
         <div className="dash-profile-save"><button className="p4-button" disabled={busy}>{tr(busy ? 'sending' : 'save')}</button>{saved && <p role="status">{tr('saved')}</p>}</div>
       </form>}
       {error && <p role="alert">{tr(error)}</p>}{!account && error && <button className="p4-button" onClick={() => setRevision(v => v + 1)}>{tr('retry')}</button>}

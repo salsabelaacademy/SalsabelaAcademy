@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, Moon, Sun } from "lucide-react";
+import { Menu, Moon, Sun, Home, BookOpen, Route, Wallet, Newspaper, Info, Mail, ArrowUpRight, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -23,18 +23,19 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navLinks = [
-    { name: t("nav.home"), href: "/" },
-    { name: t("nav.courses"), href: "/courses" },
-    { name: t("experience.howNav"), href: "/how-it-works" },
-    { name: t("pageUi.Navbar.Pricing"), href: "/pricing" },
-    { name: t("pageUi.Navbar.Blog"), href: "/blog" },
-    { name: t("nav.about"), href: "/about" },
-    { name: t("nav.contact"), href: "/contact" },
+    { name: t("nav.home"), href: "/", icon:Home },
+    { name: t("nav.courses"), href: "/courses", icon:BookOpen },
+    { name: t("experience.howNav"), href: "/how-it-works", icon:Route },
+    { name: t("pageUi.Navbar.Pricing"), href: "/pricing", icon:Wallet },
+    { name: t("pageUi.Navbar.Blog"), href: "/blog", icon:Newspaper },
+    { name: t("nav.about"), href: "/about", icon:Info },
+    { name: t("nav.contact"), href: "/contact", icon:Mail },
   ];
 
   const navBg = isScrolled
@@ -108,38 +109,38 @@ export function Navbar() {
                 <Menu className="w-6 h-6 text-slate-700 dark:text-slate-300" />
               </Button>
             </SheetTrigger>
-            <SheetContent aria-describedby={undefined} side={isRTL ? "left" : "right"} className="w-[300px] sm:w-[360px] p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-              <SheetTitle className="sr-only">{t("pageUi.Navbar.Navigation")}</SheetTitle><div className="flex flex-col h-full">
-                <div className="px-5 pt-14 pb-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3 mt-1">
+            <SheetContent aria-describedby={undefined} side={isRTL ? "left" : "right"} dir={isRTL?"rtl":"ltr"} overlayClassName="public-menu-overlay" className="public-menu-sheet">
+              <SheetTitle className="sr-only">{t("pageUi.Navbar.Navigation")}</SheetTitle><div className="public-menu-inner">
+                <div className="public-menu-brand">
+                  <div className="flex items-center gap-3 mt-1"><img src={logoIcon} alt="" width="36" height="36"/>
                   <img
                     src={isDark ? logoTextDark : logoTextLight}
                     alt={t("p4.brand")}
-                    className="h-10 w-36 object-contain"
+                    className="public-menu-wordmark"
                   />
                   </div>
                   <LanguageSwitcher />
                 </div>
-                <div className="flex-1 overflow-y-auto py-4 px-5">
-                  <div className="flex flex-col gap-1">
+                <div className="public-menu-links">
+                  <p className="public-menu-caption">{t("refinement.explore")}</p><p className="public-menu-intro">{t("refinement.menuIntro")}</p><div className="flex flex-col gap-1">
                     {navLinks.map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}
                         onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-3 text-base font-medium py-3 px-3 rounded-xl transition-colors ${
+                        aria-current={location===link.href?"page":undefined} className={`public-menu-link ${
                           location === link.href
                             ? "text-primary bg-primary/10 font-bold"
                             : "text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-primary/5"
                         }`}
                       >
-                        {link.name}
+                        <link.icon size={19} aria-hidden/><span>{link.name}</span><ChevronRight className="public-menu-chevron" size={17} aria-hidden/>
                       </Link>
                     ))}
                   </div>
                 </div>
-                <div className="p-5 border-t border-slate-100 dark:border-slate-800">
-                   <Link href={user ? getDashboardPath(user.role) : "/login"} onClick={() => setIsOpen(false)}>
+                <div className="public-menu-actions">
+                   <Link href="/apply" onClick={()=>setIsOpen(false)} className="public-menu-apply">{t("experience.cta")}<ArrowUpRight size={18} aria-hidden/></Link><Link href={user ? getDashboardPath(user.role) : "/login"} onClick={() => setIsOpen(false)}>
                     <Button className="w-full btn-primary h-12 text-base shadow-lg shadow-primary/20">
                        {user ? (t("pageUi.Navbar.Open_dashboard")) : (t("pageUi.Navbar.Sign_in"))}
                     </Button>

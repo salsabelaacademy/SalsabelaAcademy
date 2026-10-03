@@ -1,0 +1,23 @@
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSearch } from 'wouter';
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, History } from 'lucide-react';
+export function DashboardRecords({items,children,searchText,status,focusKind}:{items:any[];children:(item:any)=>ReactNode;searchText:(item:any)=>string;status?:(item:any)=>string;focusKind:string}){
+ const {t}=useTranslation(),[query,setQuery]=useState(''),[filter,setFilter]=useState(''),[page,setPage]=useState(1),search=useSearch();
+ const tr=(key:string)=>t('refinement.'+key);
+ const normalized=(v:string)=>v.normalize('NFD').replace(/[\u0300-\u036f\u064b-\u065f]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').toLocaleLowerCase();
+ const focusedSearch=useRef<string|null>(null);
+ const filtered=useMemo(()=>items.filter(v=>(!filter||status?.(v)===filter)&&normalized(searchText(v)).includes(normalized(query.trim()))),[items,query,filter,status,searchText]);
+ useEffect(()=>{setPage(1);},[query,filter]);
+ useEffect(()=>{const focus=new URLSearchParams(search).get('focus');if(!focus?.startsWith(focusKind+':')){focusedSearch.current=null;return;}if(focusedSearch.current===search)return;const index=items.findIndex(v=>String(v.id)===focus.split(':')[1]);if(index>=0){focusedSearch.current=search;setQuery('');setFilter('');setPage(Math.floor(index/8)+1);}},[search,items,focusKind]);
+ const pages=Math.max(1,Math.ceil(filtered.length/8)),current=Math.min(page,pages),statuses=status?Array.from(new Set(items.map(status))):[];
+ return <section className="dash-record-workspace"><div className="dash-record-toolbar"><label className="dash-record-search"><Search size={18} aria-hidden/><span className="sr-only">{tr('search')}</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr('search')}/></label>{status&&<label className="dash-record-filter"><SlidersHorizontal size={18} aria-hidden/><span className="sr-only">{tr('status')}</span><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="">{tr('all')}</option>{statuses.map(s=><option key={s} value={s}>{['unread','read','sent','received'].includes(s)?tr(s):t('p4.states.'+s,{defaultValue:tr('recorded')})}</option>)}</select></label>}<span className="dash-record-count">{t('refinement.results',{count:filtered.length})}</span></div><div className="dash-record-list">{filtered.slice((current-1)*8,current*8).map(children)}</div>{!filtered.length&&<p className="dash-record-empty">{tr('empty')}</p>}<nav className="dash-record-pagination" aria-label={tr('all')}><button onClick={()=>setPage(current-1)} disabled={current<=1} aria-label={tr('previous')}><ChevronLeft size={18}/></button><span>{current} / {pages}</span><button onClick={()=>setPage(current+1)} disabled={current>=pages} aria-label={tr('next')}><ChevronRight size={18}/></button></nav></section>;
+}
+export function AuditEntry({entry,date}:{entry:any;date:(s:string)=>string}){
+ const {t,i18n}=useTranslation(),tr=(k:string)=>t('refinement.'+k);
+ const known=['lesson_created','lesson_rescheduled','lesson_completed','lesson_cancelled','lesson_report','lesson_issue','appointment_rescheduled','appointment_confirmed','appointment_completed','appointment_cancelled','appointment_requested','appointment_no_show'];
+ const action=known.includes(entry.action)?tr(entry.action):tr(({POST:'create',PATCH:'update',PUT:'update',DELETE:'remove'} as Record<string,string>)[entry.action]||'recorded');
+ const resource=String(entry.resource||''),kind=/lesson/.test(resource)?'lessonRecord':/appointment/.test(resource)?'assessmentRecord':/application/.test(resource)?'applicationRecord':/user|student/.test(resource)?'studentRecord':/notification/.test(resource)?'notificationRecord':/account|profile/.test(resource)?'accountRecord':/message/.test(resource)?'messageRecord':/setting/.test(resource)?'settingsRecord':/session/.test(resource)?'sessionRecord':/integration/.test(resource)?'integrationRecord':/post/.test(resource)?'blogRecord':'otherRecord';
+ const id=resource.match(/(?:[:/])(\d+)(?:$|\/)/)?.[1];
+ return <article className="p4-card dash-audit-entry" data-search-target={'audit:'+entry.id}><span className="dash-record-symbol"><History size={20} aria-hidden/></span><div><h3>{action}</h3><p>{entry.name||t('p4.adminRole')} · {tr(kind)} {id&&<bdi>#{new Intl.NumberFormat(i18n.language).format(Number(id))}</bdi>}</p><time>{date(entry.created_at)}</time><details><summary>{tr('reference')}</summary><code dir="ltr">{entry.action} {resource}</code></details></div></article>;
+}

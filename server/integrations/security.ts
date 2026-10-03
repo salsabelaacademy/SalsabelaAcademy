@@ -53,8 +53,8 @@ export function safeZoomUrl(value: string) {
   try { const u = new URL(value); if (u.protocol === "https:" && (u.hostname === "zoom.us" || u.hostname.endsWith(".zoom.us")) && !u.username && !u.password) return u.href; } catch { /* reject */ }
   throw new IntegrationError("invalid_zoom_url", 502);
 }
-export function safeLesson<T extends { privateAdminNotes?: unknown; zoomReference?: unknown; googleCalendarReference?: unknown }>(row: T) {
-  const { privateAdminNotes, zoomReference, googleCalendarReference, ...safe } = row; return safe;
+export function safeLesson<T extends { privateAdminNotes?: unknown; zoomReference?: unknown; googleCalendarReference?: unknown; homework?: unknown }>(row: T) {
+  const { privateAdminNotes, zoomReference, googleCalendarReference, homework, ...safe } = row; return safe;
 }
 export function safeProfile<T extends { internalAdminNotes?: unknown }>(row: T) {
   const { internalAdminNotes, ...safe } = row; return safe;

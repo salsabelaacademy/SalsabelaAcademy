@@ -19,7 +19,7 @@ export function registerDashboardSearch(app: Express) {
       if (++window.count > 90) { res.setHeader('Retry-After', '60'); return res.status(429).json({code:'limited'}); }
       const admin = user.role === 'admin';
       const sources = [
-        `SELECT l.id,'lesson' AS kind,'lessons' AS tab,l.title AS title,concat_ws(' ',l.homework,l.feedback,f.details${admin ? ',u.name,l.private_admin_notes' : ''}) AS excerpt FROM lessons l LEFT JOIN (SELECT lesson_id,string_agg(concat_ws(' ',covered,comment),' ') AS details FROM lesson_followups ${admin ? '' : 'WHERE student_id=$1'} GROUP BY lesson_id) f ON f.lesson_id=l.id ${admin ? 'JOIN users u ON u.id=l.student_id' : 'WHERE l.student_id=$1'}`,
+        `SELECT l.id,'lesson' AS kind,'lessons' AS tab,l.title AS title,concat_ws(' ',l.feedback,f.details${admin ? ',u.name,l.private_admin_notes' : ''}) AS excerpt FROM lessons l LEFT JOIN (SELECT lesson_id,string_agg(concat_ws(' ',covered,comment),' ') AS details FROM lesson_followups ${admin ? '' : 'WHERE student_id=$1'} GROUP BY lesson_id) f ON f.lesson_id=l.id ${admin ? 'JOIN users u ON u.id=l.student_id' : 'WHERE l.student_id=$1'}`,
         `SELECT m.id,'message','messages',m.subject,concat_ws(' ',s.name,r.name,m.body) FROM messages m JOIN users s ON s.id=m.sender_id JOIN users r ON r.id=m.recipient_id WHERE m.sender_id=$1 OR m.recipient_id=$1`,
         `SELECT id,'notification','notifications',title,body FROM notifications WHERE user_id=$1`,
         `SELECT a.id,'attendance','attendance',a.course,concat_ws(' ',a.status,a.notes${admin ? ',u.name' : ''}) FROM attendance_records a ${admin ? 'JOIN users u ON u.id=a.student_id' : 'WHERE a.student_id=$1'}`,
@@ -30,9 +30,7 @@ export function registerDashboardSearch(app: Express) {
           `SELECT id,'post','blog',title,regexp_replace(content,'<[^>]*>',' ','g') FROM posts`,
           `SELECT a.id,'audit','audit',a.action,concat_ws(' ',u.name,a.resource) FROM (SELECT id,actor_id,action,resource FROM academy_audit ORDER BY id DESC LIMIT 200) a LEFT JOIN users u ON u.id=a.actor_id`,
         ] : [
-          `SELECT l.id,'homework','homework',l.title,concat_ws(' ',l.homework,l.feedback) FROM lessons l WHERE l.student_id=$1 AND (l.homework IS NOT NULL OR l.feedback IS NOT NULL)`,
           `SELECT e.id,'enrollment','programs',p.name,e.status FROM enrollments e JOIN programs p ON p.id=e.program_id WHERE e.student_id=$1`,
-          `SELECT a.id,'resource','overview',m.title,'' FROM assigned_materials a JOIN enrollments e ON e.id=a.enrollment_id JOIN materials m ON m.id=a.material_id JOIN integration_drive_resources r ON r.material_id=m.id WHERE e.student_id=$1 AND e.status='active'`,
         ]),
       ];
       const normalize = (s: string) => s.normalize('NFKD').replace(/[\u0300-\u036f\u064B-\u065F\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').toLowerCase();

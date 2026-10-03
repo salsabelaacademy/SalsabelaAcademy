@@ -460,9 +460,8 @@ export async function registerRoutes(
       });
     }
     const studentEnrollments = await storage.listEnrollments(authUser.id);
-    const enrollmentIds = studentEnrollments.filter(e => e.status === "active").map(e => e.id);
-    const [studentLessons, materials, studentProgress, studentNotifications] = await Promise.all([
-      storage.listLessons(authUser.id), storage.listAssignedMaterials(enrollmentIds), storage.listProgress(enrollmentIds), storage.listNotifications(authUser.id),
+        const [studentLessons, materials, studentProgress, studentNotifications] = await Promise.all([
+      storage.listLessons(authUser.id), Promise.resolve([]), Promise.resolve([]), storage.listNotifications(authUser.id),
     ]);
     const safeAppointments = (await storage.listAppointments(authUser.id)).map(({ notes, zoomReference, googleCalendarEventReference, ...safe }) => safe);
     res.json({ user: authUser, stats: recordStats(records, authUser.id), ...records, lessons: studentLessons.map(safeLesson), enrollments: studentEnrollments, assignedMaterials: materials, progress: studentProgress, notifications: studentNotifications, appointments: safeAppointments });
