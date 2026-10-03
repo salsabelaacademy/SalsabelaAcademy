@@ -19,3 +19,10 @@ export function ContentTransition({ identity, children }: { identity: string; ch
   }, [identity]);
   return <div ref={root} className="workspace-transition">{children}</div>;
 }
+
+/** Brief visual feedback only for an explicit mobile-menu language switch. Routing is immediate. */
+export function MobileLanguageTransition() {
+ const {t}=useTranslation(),[visible,setVisible]=useState(false);
+ useEffect(()=>{let timer:ReturnType<typeof setTimeout>;const show=()=>{clearTimeout(timer);setVisible(true);timer=setTimeout(()=>setVisible(false),480);};window.addEventListener('academy:mobile-language',show);return()=>{clearTimeout(timer);window.removeEventListener('academy:mobile-language',show);};},[]);
+ return visible?<div className="academy-language-feedback" role="status" aria-live="polite"><div><img src="/logo-icon.png" width="64" height="64" alt=""/><p>{t('pageUi.BrandLoading.Loading')}</p></div></div>:null;
+}

@@ -85,7 +85,7 @@ function ToolbarBtn({
       onClick={onClick}
       title={editorLabel(title)} aria-label={editorLabel(title)}
       disabled={disabled}
-      className={`relative group p-1.5 rounded-md text-sm transition-all ${
+      className={`relative group min-h-11 min-w-11 p-1.5 rounded-md text-sm transition-all ${
         active
           ? "bg-primary/15 text-primary shadow-sm"
           : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
@@ -247,7 +247,7 @@ export default function AdminPostEditor() {
   const [language, setLanguage] = useState<"en" | "ar">("en");
   const [coverImage, setCoverImage] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
-  const [status, setStatus] = useState<"published" | "draft">("published");
+  const [status, setStatus] = useState<"published" | "draft">("draft");
   const [slugEdited, setSlugEdited] = useState(false);
   const [saved, setSaved] = useState(false);
   const [wordCount, setWordCount] = useState(0);
@@ -393,17 +393,17 @@ export default function AdminPostEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="academy-admin-page academy-editor-page min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Top bar */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div className="flex items-center gap-3">
           <Link href="/admin">
-            <Button aria-label={editorLabel("Back to articles")} variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+            <Button aria-label={editorLabel("Back to articles")} variant="ghost" size="icon" className="h-11 w-11 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <div className="flex items-center gap-2.5">
-            <img src={logoIcon} alt="Salsabela Academy" className="h-7 w-7 rounded-lg object-cover" />
+            <img src={logoIcon} alt={t("p4.brand")} className="h-7 w-7 rounded-lg object-cover" />
             <div className="flex flex-col leading-none">
               <span className="font-display font-bold text-slate-900 dark:text-slate-100 text-sm">
                 {editorLabel(isNew ? "New Post" : "Edit Post")}

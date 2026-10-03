@@ -1,3 +1,4 @@
+import {backgroundPreload} from '../shared/page-background';
 import {publicCourses,resolvePublicCourse} from './public-courses';
 import express,{type Express} from 'express';
 import fs from 'node:fs';
@@ -43,7 +44,7 @@ export function serveStatic(app:Express, directory=path.resolve(typeof __dirname
   const found=publicPaths.includes(plain)||!!data||!!course||privatePage;
   const m=pageMetadata(plain,lang,plain.startsWith('/blog/')?data:undefined,course);
   const body=privatePage?'':await renderPublic(plain,lang,data,catalogue);
-  const html=template.replace(/<html[^>]*>/,`<html lang="${lang}" dir="${lang==='ar'?'rtl':'ltr'}">`).replace(/<title>[\s\S]*?<\/title>/g,'').replace(/<meta\s+(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/g,'').replace('</head>',()=>metadataHtml(m)+'</head>').replace('<div id="root"></div>',()=>`<div id="root">${body}</div>`);
+  const html=template.replace(/<html[^>]*>/,`<html lang="${lang}" dir="${lang==='ar'?'rtl':'ltr'}">`).replace(/<title>[\s\S]*?<\/title>/g,'').replace(/<meta\s+(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/g,'').replace('</head>',()=>metadataHtml(m)+backgroundPreload(plain)+'</head>').replace('<div id="root"></div>',()=>`<div id="root">${body}</div>`);
   res.status(found?200:404).set('Cache-Control','no-store').set('X-Robots-Tag',m.index?'index,follow':'noindex,nofollow').type('html').send(html);
  }catch(e){
   let cause:any=e, unavailable=false;

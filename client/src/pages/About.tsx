@@ -26,10 +26,10 @@ export default function About() {
                 <span>{t("pageUi.About.Direct_One_on_One_Learning")}</span>
               </div>
               <h1 className="text-4xl lg:text-5xl font-display font-bold text-slate-900 dark:text-slate-100 mb-4 leading-tight">
-                {t("about.title")}
+                {t("polish.aboutTitle")}
               </h1>
               <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-                {t("about.subtitle")}
+                {t("polish.aboutSubtitle")}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link href="/contact?tab=trial">
@@ -78,12 +78,12 @@ export default function About() {
               <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {t("about.academy_name")}
               </h2>
-              <p className="text-primary font-semibold mb-6">{t("about.academy_tagline")}</p>
+              <p className="text-primary font-semibold mb-6">{t("polish.aboutTagline")}</p>
               <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed mb-6">
-                {t("about.academy_intro")}
+                {t("polish.aboutIntro")}
               </p>
               <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
-                {t("about.mission_desc_2")}
+                {t("polish.aboutMission")}
               </p>
             </div>
 
@@ -96,7 +96,7 @@ export default function About() {
         <div className="container-wide">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-slate-100 mb-4">
-              {t("about.method_title")}
+              {t("polish.methodTitle")}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,10 +113,10 @@ export default function About() {
                 <FeatureIcon name={(["book-half", "person-video3", "calendar2-week", "journal-bookmark-fill"] as const)[i]} compact />
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
-                    {t(`about.${m.k}_title`)}
+                    {t(`polish.${m.k}_title`)}
                   </h3>
                   <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                    {t(`about.${m.k}_desc`)}
+                    {t(`polish.${m.k}_desc`)}
                   </p>
                 </div>
               </div>

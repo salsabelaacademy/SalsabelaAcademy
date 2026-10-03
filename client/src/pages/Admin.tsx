@@ -22,6 +22,7 @@ export default function Admin() {
   const tr = (key: string) => t('p4.cms.' + key);
   const [, navigate] = useLocation();
   const { user, loading, logout } = useAuth();
+  const [articleSearch,setArticleSearch]=useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
 
@@ -52,7 +53,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="academy-admin-page academy-articles-page min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Top bar */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
@@ -86,7 +87,7 @@ export default function Admin() {
           </div>
         )}
         {/* Stats bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="academy-article-stats grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
             { label: tr("total"), value: posts.length, icon: FileText, color: "text-primary" },
             { label: tr("published"), value: posts.filter(p => p.status === "published").length, icon: CheckCircle2, color: "text-green-500" },
@@ -103,7 +104,7 @@ export default function Admin() {
 
         {/* Posts list header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">{tr('all')}</h2>
+          <div><h2 className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">{tr('all')}</h2><p className="text-sm text-slate-500 mt-2">{t("polish.articlesHint")}</p></div>
           <Link href="/admin/new">
             <Button className="btn-primary gap-2">
               <Plus className="w-4 h-4" />
@@ -112,6 +113,7 @@ export default function Admin() {
           </Link>
         </div>
 
+        <label className="academy-article-search"><span className="sr-only">{t("polish.searchArticles")}</span><input type="search" placeholder={t("polish.searchArticles")} value={articleSearch} onChange={e=>setArticleSearch(e.target.value)} /></label>
         {/* Posts table */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -145,7 +147,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {posts.map(post => (
+                  {posts.filter(post=>`${post.title} ${post.slug}`.toLocaleLowerCase(i18n.language).includes(articleSearch.trim().toLocaleLowerCase(i18n.language))).map(post => (
                     <tr key={post.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4">
                         <div>
@@ -155,7 +157,7 @@ export default function Admin() {
                       </td>
                       <td className="px-4 py-4 hidden sm:table-cell">
                         <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {t("pageUi.Admin.English")}
+                          {t(post.language === "ar" ? "p4.arabic" : "p4.english")}
                         </span>
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
@@ -189,7 +191,7 @@ export default function Admin() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                className="h-7 text-xs"
+                                className="h-11 text-xs"
                                 onClick={() => handleDelete(post.id)}
                                 disabled={deletePost.isPending}
                               >
@@ -208,7 +210,7 @@ export default function Admin() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-red-500"
+                              className="h-11 w-11 text-slate-400 hover:text-red-500"
                               onClick={() => setDeleteConfirm(post.id)}
                               aria-label={tr('delete')}
                             >

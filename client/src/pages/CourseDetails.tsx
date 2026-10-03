@@ -1,3 +1,4 @@
+import { PageBackdrop } from "@/components/PageBackdrop";
 import {useEffect} from "react";
 import {applyMetadata} from "@/components/Seo";
 import {pageMetadata} from "@shared/seo";
@@ -228,10 +229,11 @@ export default function CourseDetails() {
   const imageUrl    = isRTL && course.imageUrlAr     ? course.imageUrlAr    : course.imageUrl;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="academy-course-page min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
 
-      <main className="pt-32 pb-20">
+      <main className="academy-course-main relative isolate pt-32 pb-20">
+        <PageBackdrop variant="courses" />
         <div className="container-wide">
           <Link href="/courses">
             <Button variant="ghost" className="mb-8 hover:bg-transparent p-0 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors gap-2">
@@ -241,10 +243,10 @@ export default function CourseDetails() {
           </Link>
 
           {/* Hero grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start mb-20">
-            <div data-reveal>
-              <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-slate-200 dark:shadow-slate-900">
-                <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+            <div data-no-reveal>
+              <div className="academy-course-cover relative aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-slate-200 dark:shadow-slate-900">
+                <img src={imageUrl} alt={title} width={1600} height={900} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <div className={`absolute top-6 ${isRTL ? "left-6" : "right-6"}`}>
                   <Badge className="bg-white/95 text-primary hover:bg-white/95 px-4 py-1 text-sm font-bold shadow-sm border-none">
@@ -283,7 +285,7 @@ export default function CourseDetails() {
 
                   <div>
                     <p className="text-xs text-slate-400 font-semibold uppercase">{t("courses.tuition")}</p>
-                    <p className="font-bold text-primary text-sm">{isRTL && course.price === "Based on package" ? "حسب الباقة" : course.price}</p>
+                    <p className="font-bold text-primary text-sm">{isRTL && course.price === "Based on package" ? t("polish.packagePrice") : course.price}</p>
                   </div>
                 </div>
               </div>
@@ -314,9 +316,7 @@ export default function CourseDetails() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-primary/10 p-2 rounded-lg text-primary">
 
-                </div>
                 <h2 className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">{t("courses.what_learn")}</h2>
               </div>
               <ul className="space-y-4">
@@ -331,9 +331,7 @@ export default function CourseDetails() {
 
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-secondary/10 p-2 rounded-lg text-secondary">
 
-                </div>
                 <h2 className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">
                   {t("pageUi.CourseDetails.Course_Features")}
                 </h2>

@@ -35,7 +35,7 @@ export default function Integrations() {
     const [c, j, s, d, e, l, mail] = await Promise.all([api("/admin/integrations"), api("/admin/integrations/jobs"), api("/admin/integrations/sessions"), api("/dashboard/admin"), api("/enrollments"), api("/admin/integrations/classroom/links"), api("/admin/notifications/status")]);
     const {programs}=await api("/portal");
     setNotification(mail);
-    setConnections(c); setJobs(j); setSessions(s); setStudents(d.users?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog({programs,units:[],materials:[]}); setLinks(l);
+    setConnections(c.filter((v:Row)=>v.provider!=='drive')); setJobs(j); setSessions(s); setStudents(d.users?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog({programs,units:[],materials:[]}); setLinks(l);
   }
   useEffect(() => { if (!loading && user?.role !== "admin") navigate(user ? getDashboardPath(user.role) : "/login"); }, [loading, user, navigate]);
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function Integrations() {
   if (loading || user?.role !== "admin" || initializing) return <BrandLoading compact />;
   const programName = (p?: Row) => programLabel(p as {name: string; slug: string} | undefined, i18n.language, publicCourses);
   const enrollmentOptions = enrollments.filter(e => e.status === "active").map(e => <option key={e.id} value={e.id}>#{e.id} — {students.find(s => s.id === e.studentId)?.name || e.studentId} — {programName(catalog.programs.find((p: Row) => p.id === e.programId))}</option>);
-  return <section className="min-h-screen bg-slate-50 p-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:p-8">
+  return <section className="academy-admin-page academy-integration-page min-h-screen bg-slate-50 p-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:p-8">
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4"><Link href="/dashboard/admin" className="underline">{tr("back")}</Link><DisplayControls /><Button disabled={busy} onClick={() => run(reload)}>{tr("refresh")}</Button></header>
       <div><h1 className="text-3xl font-bold">{tr("title")}</h1><p className="mt-2 text-slate-600 dark:text-slate-300">{tr("subtitle")}</p></div>

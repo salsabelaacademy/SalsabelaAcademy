@@ -23,5 +23,15 @@
     "src": "/images/page-contact-optimized.webp",
     "width": 1600,
     "height": 900
+  },
+  "about": {
+    "src": "/images/page-about-optimized.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "apply": {
+    "src": "/images/page-apply-optimized.webp",
+    "width": 1600,
+    "height": 900
   }
 }

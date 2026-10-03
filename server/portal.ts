@@ -58,6 +58,20 @@ export function registerPortalRoutes(app: Express) {
   registerDashboardSearch(app);
   registerAvatars(app, publicLimit);
   registerPushRoutes(app, publicLimit);
+  app.get('/api/admin/students/:studentId/overview', requireAuth(['admin']), run(async(req,res)=>{
+    const studentId=id.parse(req.params.studentId);
+    const [account]=await rows(`SELECT u.id,u.name,u.email,u.role,u.status,u.avatar_url AS "avatarUrl",u.created_at,u.last_login_at,u.email_verified_at,
+      d.date_of_birth::text,d.city,d.bio,COALESCE(p.phone,d.phone) AS phone,COALESCE(p.country,d.country) AS country,
+      COALESCE(p.timezone,d.timezone,'UTC') AS timezone,COALESCE(p.preferred_language,d.preferred_language,'en') AS preferred_language,p.learning_goals
+      FROM users u LEFT JOIN student_profiles p ON p.user_id=u.id LEFT JOIN account_details d ON d.user_id=u.id WHERE u.id=$1 AND u.role='student'`,[studentId]);
+    if(!account)return res.status(404).json({code:'not_found'});
+    const [lessons,attendance,counts]=await Promise.all([
+      rows('SELECT id,student_id,program_id,title,starts_at,ends_at,status,feedback FROM lessons WHERE student_id=$1 ORDER BY starts_at DESC',[studentId]),
+      rows('SELECT id,student_id,session_date,status,notes FROM attendance_records WHERE student_id=$1 ORDER BY session_date DESC',[studentId]),
+      rows("SELECT kind,count(*)::int AS count FROM lesson_followups WHERE student_id=$1 GROUP BY kind",[studentId])
+    ]);
+    res.set('Cache-Control','no-store').json({account,lessons,attendance,reports:counts.find(v=>v.kind==='report')?.count||0,notices:counts.find(v=>v.kind==='issue')?.count||0});
+  }));
   app.get("/api/portal/account", requireAuth(["admin", "student"]), run(async (req, res) => {
     const user = (req as any).auth.user;
     const [account] = await rows("SELECT name,email,role,status,email_verified_at,created_at,last_login_at FROM users WHERE id=$1", [user.id]);

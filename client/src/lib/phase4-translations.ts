@@ -89,7 +89,7 @@ export const phase4Translations = {
     ready: "Take your next step",
     rights: "All rights reserved.",
     contactIntro: "Send the academy a question about your learning journey.",
-    unified: "Start the unified free assessment application",
+    unified: "Find your starting point — book a free assessment",
     applicationTitle: "Free assessment application",
     applicationIntro:
       "Tell us about your learning goals. The academy will review your application and contact you.",
@@ -320,7 +320,7 @@ export const phase4Translations = {
     ready: "ابدأ خطوتك القادمة",
     rights: "جميع الحقوق محفوظة.",
     contactIntro: "أرسل إلى الأكاديمية سؤالك عن رحلتك التعليمية.",
-    unified: "ابدأ طلب التقييم المجاني الموحّد",
+    unified: "اكتشف نقطة بدايتك — احجز تقييمك المجاني",
     applicationTitle: "طلب التقييم المجاني",
     applicationIntro:
       "أخبرنا عن أهدافك التعليمية. ستراجع الأكاديمية طلبك وتتواصل معك.",

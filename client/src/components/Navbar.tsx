@@ -119,7 +119,7 @@ export function Navbar() {
                     className="public-menu-wordmark"
                   />
                   </div>
-                  <LanguageSwitcher />
+                  <LanguageSwitcher onBeforeChange={()=>setIsOpen(false)} mobileTransition />
                 </div>
                 <div className="public-menu-links">
                   <p className="public-menu-caption">{t("refinement.explore")}</p><p className="public-menu-intro">{t("refinement.menuIntro")}</p><div className="flex flex-col gap-1">
