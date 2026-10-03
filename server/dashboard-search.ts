@@ -19,7 +19,7 @@ export function registerDashboardSearch(app: Express) {
       if (++window.count > 90) { res.setHeader('Retry-After', '60'); return res.status(429).json({code:'limited'}); }
       const admin = user.role === 'admin';
       const sources = [
-        `SELECT l.id,'lesson' AS kind,'lessons' AS tab,l.title AS title,concat_ws(' ',l.homework,l.feedback${admin ? ',u.name,l.private_admin_notes' : ''}) AS excerpt FROM lessons l ${admin ? 'JOIN users u ON u.id=l.student_id' : 'WHERE l.student_id=$1'}`,
+        `SELECT l.id,'lesson' AS kind,'lessons' AS tab,l.title AS title,concat_ws(' ',l.homework,l.feedback,f.details${admin ? ',u.name,l.private_admin_notes' : ''}) AS excerpt FROM lessons l LEFT JOIN (SELECT lesson_id,string_agg(concat_ws(' ',covered,comment),' ') AS details FROM lesson_followups ${admin ? '' : 'WHERE student_id=$1'} GROUP BY lesson_id) f ON f.lesson_id=l.id ${admin ? 'JOIN users u ON u.id=l.student_id' : 'WHERE l.student_id=$1'}`,
         `SELECT m.id,'message','messages',m.subject,concat_ws(' ',s.name,r.name,m.body) FROM messages m JOIN users s ON s.id=m.sender_id JOIN users r ON r.id=m.recipient_id WHERE m.sender_id=$1 OR m.recipient_id=$1`,
         `SELECT id,'notification','notifications',title,body FROM notifications WHERE user_id=$1`,
         `SELECT a.id,'attendance','attendance',a.course,concat_ws(' ',a.status,a.notes${admin ? ',u.name' : ''}) FROM attendance_records a ${admin ? 'JOIN users u ON u.id=a.student_id' : 'WHERE a.student_id=$1'}`,

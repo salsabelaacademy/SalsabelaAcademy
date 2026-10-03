@@ -95,7 +95,7 @@ export default function Pricing() {
                     <span className="text-slate-400 mb-2">{t("pricing.per_month")}</span>
                   </div>
 
-                  <Link href={`/contact?tab=enroll&plan=${encodeURIComponent(plan.nameEn)}`}>
+                  <Link href={`/contact?tab=enroll&plan=${encodeURIComponent(plan.nameEn)}#contact-form`}>
                     <Button
                       className={`w-full h-12 text-base font-bold rounded-xl ${
                         plan.popular

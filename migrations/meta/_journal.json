@@ -57,6 +57,13 @@
       "when": 1790015628801,
       "tag": "0007_web_push",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790899200000,
+      "tag": "0008_lesson_followup",
+      "breakpoints": true
     }
   ]
 }

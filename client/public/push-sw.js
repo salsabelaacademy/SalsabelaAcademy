@@ -4,7 +4,7 @@ self.addEventListener('push', event => {
  event.waitUntil(self.registration.showNotification('Salsabela Academy', {
  body: ar ? 'لديك تحديث جديد في الأكاديمية. افتح لوحتك للاطلاع عليه.' : 'You have an academy update. Open your dashboard to view it.',
  icon: '/logo-icon.png', badge: '/logo-icon.png', tag: 'academy-' + (data.id || 'update'),
- data: { url: ar ? '/ar/login' : '/login' }
+ data: { url: (ar ? '/ar' : '') + '/dashboard/' + (data.role === 'admin' ? 'admin' : 'student') + '?tab=notifications' + (Number.isInteger(Number(data.id)) && Number(data.id)>0 ? '&focus=notification:'+Number(data.id) : '') }
  }));
 });
 self.addEventListener('notificationclick', event => {

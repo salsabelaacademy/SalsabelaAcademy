@@ -1,1 +1,27 @@
-{}
+{
+  "courses": {
+    "src": "/images/page-courses-optimized.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "pricing": {
+    "src": "/images/page-pricing-optimized.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "journal": {
+    "src": "/images/page-journal-optimized.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "journey": {
+    "src": "/images/page-journey-optimized.webp",
+    "width": 1600,
+    "height": 900
+  },
+  "contact": {
+    "src": "/images/page-contact-optimized.webp",
+    "width": 1600,
+    "height": 900
+  }
+}

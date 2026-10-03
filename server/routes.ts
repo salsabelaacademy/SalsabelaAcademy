@@ -12,8 +12,8 @@ import sanitizeHtml from "sanitize-html";
 import { db } from "./db";
 import { programs, curriculumModules, curriculumUnits, materials, assignedMaterials, progress, enrollments } from "@shared/schema";
 import { eq, and, notInArray, desc } from "drizzle-orm";
-import { registerIntegrationRoutes } from "./integrations/routes";
-import { queue } from "./integrations/service";
+import { registerIntegrationRoutes, checkScheduleConflict } from "./integrations/routes";
+import { queue, withLock } from "./integrations/service";
 import { safeLesson, safeProfile, frontendOrigin, validTimezone } from "./integrations/security";
 import { verifyTurnstile } from "./turnstile";
 import { notificationStatus, sendNotificationTest } from "./notifications";
@@ -495,9 +495,13 @@ export async function registerRoutes(
       let appointment;
       if (req.body.startsAt && req.body.endsAt) {
         const startsAt = z.coerce.date().parse(req.body.startsAt); const endsAt = z.coerce.date().parse(req.body.endsAt);
-        if (endsAt <= startsAt || (req.body.originalTimezone && !validTimezone(String(req.body.originalTimezone)))) return res.status(400).json({ message: "Invalid appointment time or IANA timezone" });
-        appointment = await storage.createAppointment({ applicationId, appointmentType: String(req.body.appointmentType || "assessment"), startsAt, endsAt, originalTimezone: req.body.originalTimezone, status: "confirmed", notes: req.body.notes });
-        await queue("appointment", appointment.id);
+        if (endsAt <= startsAt || endsAt.getTime()-startsAt.getTime()>86400000 || (req.body.originalTimezone && !validTimezone(String(req.body.originalTimezone)))) return res.status(400).json({ message: "Invalid appointment time or IANA timezone" });
+        appointment = await withLock(async()=>{
+          await checkScheduleConflict(startsAt,endsAt,'appointment');
+          const row=await storage.createAppointment({ applicationId, appointmentType: String(req.body.appointmentType || "assessment"), startsAt, endsAt, originalTimezone: req.body.originalTimezone, status: "confirmed", notes: req.body.notes });
+          await queue('appointment',row.id);
+          return row;
+        });
       }
       if (!appointment) return res.status(400).json({ message: "Assessment start and end are required" });
       return res.json({ application: await storage.updateApplication(applicationId, "assessment_booked"), appointment });

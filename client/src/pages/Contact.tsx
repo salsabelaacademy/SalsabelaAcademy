@@ -207,6 +207,19 @@ export default function Contact() {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab as Tab);
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => { setActiveTab(initialTab); setSubmitted(false); }, [initialTab]);
+  useEffect(() => {
+    if (window.location.hash !== '#contact-form') return;
+    let scrollFrame: number | undefined;
+    const frame = requestAnimationFrame(() => {
+      scrollFrame = requestAnimationFrame(() => {
+        document.getElementById('contact-form')?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (scrollFrame !== undefined) cancelAnimationFrame(scrollFrame);
+    };
+  }, [initialTab]);
 
   const userTimezone = useMemo(() => {
     try {
@@ -298,7 +311,7 @@ export default function Contact() {
             </div>
 
             {/* Right form panel */}
-            <div className="lg:col-span-3">
+            <div id="contact-form" className="lg:col-span-3 scroll-mt-0">
               <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 overflow-hidden">
 
                 {/* Tabs */}

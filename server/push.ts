@@ -34,7 +34,7 @@ export function registerPushRoutes(app: Express, limit: RequestHandler) {
     try { const value = z.object({endpoint}).strict().parse(req.body); await pool.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND endpoint=$2',[(req as any).auth.user.id,value.endpoint]); res.json({subscribed:false}); } catch(error){next(error);}
   });
 }
-export async function deliverPush(subscription: webpush.PushSubscription, payload: {id:number;language:string}, send = webpush.sendNotification) {
+export async function deliverPush(subscription: webpush.PushSubscription, payload: {id:number;language:string;role?:string}, send = webpush.sendNotification) {
   return send(subscription, JSON.stringify(payload), {vapidDetails:{subject:process.env.WEB_PUSH_SUBJECT!,publicKey:process.env.WEB_PUSH_PUBLIC_KEY!,privateKey:process.env.WEB_PUSH_PRIVATE_KEY!},TTL:3600,timeout:10000});
 }
 export function startPushWorker() {
@@ -47,11 +47,11 @@ export function startPushWorker() {
         // Atomic lease supports multiple application instances; crashed jobs become eligible again.
         const result=await pool.query(`UPDATE push_deliveries SET attempts=attempts+1,next_attempt=now()+interval '2 minutes' WHERE id=(SELECT id FROM push_deliveries WHERE status='pending' AND attempts<5 AND next_attempt<=now() ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`);
         const job=result.rows[0]; if(!job) break;
-        const {rows}=await pool.query(`SELECT s.*,n.user_id AS recipient FROM push_subscriptions s JOIN notifications n ON n.id=$1 JOIN users u ON u.id=s.user_id WHERE s.id=$2 AND s.user_id=n.user_id AND u.status='active' AND n.created_at > now()-interval '24 hours'`,[job.notification_id,job.subscription_id]);
+        const {rows}=await pool.query(`SELECT s.*,u.role,n.user_id AS recipient FROM push_subscriptions s JOIN notifications n ON n.id=$1 JOIN users u ON u.id=s.user_id WHERE s.id=$2 AND s.user_id=n.user_id AND u.status='active' AND n.created_at > now()-interval '24 hours'`,[job.notification_id,job.subscription_id]);
         const sub=rows[0];
         if(!sub || !allowedPushEndpoint(sub.endpoint)){await pool.query("UPDATE push_deliveries SET status='skipped' WHERE id=$1",[job.id]);continue;}
         try {
-          await deliverPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},{id:job.notification_id,language:sub.language});
+          await deliverPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},{id:job.notification_id,language:sub.language,role:sub.role});
           await pool.query("UPDATE push_deliveries SET status='sent',last_error=NULL WHERE id=$1",[job.id]);
         } catch(error) {
           const status=Number((error as {statusCode?:number}).statusCode || 0);

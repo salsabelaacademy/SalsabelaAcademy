@@ -1,4 +1,5 @@
 import { registerDashboardSearch } from "./dashboard-search";
+import { registerLessonFollowups } from './lesson-followup';
 import { registerPushRoutes } from "./push";
 import { registerTestimonials } from "./testimonials";
 import { registerAvatars } from "./avatars";
@@ -46,6 +47,7 @@ export const publicLimit: RequestHandler = run(async (req, res, next) => {
   next();
 });
 export function registerPortalRoutes(app: Express) {
+  registerLessonFollowups(app);
   registerDashboardSearch(app);
   registerAvatars(app, publicLimit);
   registerPushRoutes(app, publicLimit);
@@ -167,6 +169,7 @@ export function registerPortalRoutes(app: Express) {
         people,
         programRows,
         sessions,
+        studentAppointments,
       ] = await Promise.all([
         rows(
           `SELECT * FROM lessons ${admin ? "" : "WHERE student_id=$1"} ORDER BY starts_at DESC NULLS LAST`,
@@ -189,7 +192,7 @@ export function registerPortalRoutes(app: Express) {
           admin ? [] : [u.id],
         ),
         rows(
-          `SELECT id,name,role,status${admin ? ",email" : ""} FROM users WHERE ${admin ? "role='student'" : "role='admin' AND status='active'"}`,
+          admin ? "SELECT u.id,u.name,u.role,u.status,u.email,u.avatar_url AS \"avatarUrl\",p.phone,p.country,p.timezone,p.preferred_language FROM users u LEFT JOIN student_profiles p ON p.user_id=u.id WHERE u.role='student' ORDER BY u.name,u.id" : "SELECT id,name,role,status FROM users WHERE role='admin' AND status='active'",
         ),
         rows(
           "SELECT id,name,slug FROM programs WHERE is_public=true",
@@ -198,6 +201,7 @@ export function registerPortalRoutes(app: Express) {
           "SELECT id,created_at,expires_at FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now()",
           [u.id],
         ),
+        admin ? Promise.resolve([]) : rows('SELECT id,student_id,appointment_type,starts_at,ends_at,status FROM appointments WHERE student_id=$1 ORDER BY starts_at',[u.id]),
       ]);
       const base: any = {
         lessons: admin
@@ -217,6 +221,7 @@ export function registerPortalRoutes(app: Express) {
         people,
         programs: programRows,
         sessions,
+        appointments: studentAppointments,
       };
       if (admin) {
         const [

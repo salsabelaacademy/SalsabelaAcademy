@@ -1,4 +1,5 @@
 import { workspaceTranslations } from "./workspace-translations";
+import { followupTranslations } from '@shared/lesson-followup';
 import { pageUiTranslations } from "./page-ui-translations";
 import { editorUiTranslations } from "./editor-ui-translations";
 import { reviewTranslations } from "./review-translations";
@@ -14,5 +15,6 @@ import { integrationTranslations } from './integration-translations';
 import { accountTranslations } from './account-translations';
 import { editorTranslations } from './editor-translations';
 export const resources = Object.fromEntries(['en','ar'].map(lang=>[lang,{translation:{workspace:workspaceTranslations[lang as 'en'|'ar'],pageUi:pageUiTranslations[lang as 'en'|'ar'],editorUi:editorUiTranslations[lang as 'en'|'ar'],review:reviewTranslations[lang as 'en'|'ar'],experience:experienceTranslations[lang as 'en'|'ar'],homeContent:homeTranslations[lang as 'en'|'ar'],admission:admissionTranslations[lang as 'en'|'ar'],...originalResources[lang as 'en'|'ar'].translation,restore:restorationTranslations[lang as 'en'|'ar'],p4:phase4Translations[lang as 'en'|'ar'],integrations:integrationTranslations[lang as 'en'|'ar'],accountFlow:accountTranslations[lang as 'en'|'ar'],editor:editorTranslations[lang as 'en'|'ar']}}]));
+for (const language of ['en','ar'] as const) (resources[language].translation as any).followup = followupTranslations[language];
 i18n.use(initReactI18next).init({showSupportNotice:false,resources,lng:typeof window!=='undefined' && /^\/ar(?:\/|$)/.test(window.location.pathname)?'ar':'en',fallbackLng:'en',interpolation:{escapeValue:false},saveMissing:import.meta.env?.DEV,missingKeyHandler:(_l,_n,key)=>{if(import.meta.env?.DEV) console.warn('Missing translation:',key);}});
 export default i18n;

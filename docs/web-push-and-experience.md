@@ -25,7 +25,7 @@ Open dashboard > Profile > Updates on your phone. Press Enable on this device an
 
 HTTPS is required on the final domain. Localhost is available for isolated development. On iOS/iPadOS 16.4+, add the academy to the Home Screen and open it from there before enabling push. Push availability and delivery depend on browser support, network and operating-system permissions; no real-phone delivery has been claimed without a device test.
 
-Keep dashboard and its API on the same configured origin. A subscription made on `salsabela.com` is distinct from one made on `dashboard.salsabela.com`. If moving origins, subscribe again on the destination. The notification worker opens that same origin's login route, which redirects an authenticated user into their role's dashboard.
+Keep dashboard and its API on the same configured origin. A subscription made on `salsabela.com` is distinct from one made on `dashboard.salsabela.com`. If moving origins, subscribe again on the destination. The notification worker opens the recipient's role-scoped notifications page on that same origin. Authentication is still required; an expired session returns to login. The notification ID is not an authorization token.
 
 ## Real events and privacy
 

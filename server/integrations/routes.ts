@@ -1,5 +1,6 @@
 import { Router, type Express, type Request } from "express";
 import { z } from "zod";
+import { followupTranslations } from '../../shared/lesson-followup';
 import { pool } from "../db";
 import { requireAuth, type AuthUser } from "../auth";
 import { configured, decrypt, digest, driveId, frontendOrigin, IntegrationError, safeZoomUrl, validTimezone } from "./security";
@@ -13,6 +14,10 @@ const auth = (req: Request) => (req as Request & { auth: { user: AuthUser; token
 const iso = z.string().datetime({ offset: true }).transform(s => new Date(s));
 const timezone = z.string().max(80).refine(validTimezone, "Invalid IANA timezone");
 const schedule = z.object({ studentId: id, title: z.string().trim().min(1).max(150), programId: id.optional(), startsAt: iso, endsAt: iso, timezone: timezone.default("UTC") }).refine(x => x.endsAt > x.startsAt && x.endsAt.getTime() - x.startsAt.getTime() <= 24 * 3600000, "Invalid duration");
+export async function checkScheduleConflict(start: Date, end: Date, kind: Kind, exceptId = 0) {
+  const found = await pool.query(`SELECT id FROM lessons WHERE status='scheduled' AND starts_at<$2 AND ends_at>$1 AND NOT ($3='lesson' AND id=$4) UNION ALL SELECT id FROM appointments WHERE status='confirmed' AND starts_at<$2 AND ends_at>$1 AND NOT ($3='appointment' AND id=$4) LIMIT 1`,[start,end,kind,exceptId]);
+  if (found.rows.length) throw new IntegrationError('schedule_conflict',409);
+}
 
 export function registerIntegrationRoutes(app: Express) {
   const router = Router();
@@ -100,8 +105,10 @@ export function registerIntegrationRoutes(app: Express) {
     if (!student) throw new IntegrationError("student_inactive", 400);
     if (data.programId && !(await pool.query("SELECT id FROM enrollments WHERE student_id=$1 AND program_id=$2 AND status='active'", [data.studentId, data.programId])).rowCount) throw new IntegrationError("permission_denied", 403);
     const row = await withLock(async () => {
+      await checkScheduleConflict(data.startsAt,data.endsAt,'lesson');
       const row = (await pool.query("INSERT INTO lessons(student_id,program_id,title,starts_at,ends_at) VALUES($1,$2,$3,$4,$5) RETURNING *", [data.studentId, data.programId || null, data.title, data.startsAt, data.endsAt])).rows[0];
       await pool.query("INSERT INTO integration_meetings(key,timezone) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET timezone=$2", [`lesson:${row.id}`, data.timezone]);
+      await pool.query('INSERT INTO academy_audit(actor_id,action,resource) VALUES($1,$2,$3)',[auth(req).user.id,'lesson_created',`lesson:${row.id}`]);
       await queue("lesson", row.id); return row;
     }); res.status(201).json(row);
   });
@@ -111,13 +118,24 @@ export function registerIntegrationRoutes(app: Express) {
       const body = z.object({ startsAt: iso.optional(), endsAt: iso.optional(), status: z.enum(kind === "lesson" ? ["scheduled", "completed", "cancelled"] : ["requested", "confirmed", "completed", "cancelled", "no_show"]).optional(), timezone: timezone.optional() }).strict().parse(req.body);
       await withLock(async () => {
         const old = await resource(kind, itemId); if (!old) throw new IntegrationError("resource_missing", 404);
-        if (old.status === "cancelled" && body.status && body.status !== "cancelled") throw new IntegrationError("cancelled_terminal", 409);
-        const start = body.startsAt || old.starts_at, end = body.endsAt || old.ends_at;
-        if (!start || !end || end <= start) throw new IntegrationError("invalid_time");
+        if (old.status === "cancelled" && ((body.status && body.status !== "cancelled") || body.startsAt || body.endsAt)) throw new IntegrationError("cancelled_terminal", 409);
+        if (old.status === 'completed' && (body.startsAt || body.endsAt)) throw new IntegrationError('completed_terminal',409);
+        const start = body.startsAt || (old.starts_at ? new Date(old.starts_at) : null), end = body.endsAt || (old.ends_at ? new Date(old.ends_at) : null);
+        if (!start || !end || end <= start || end.getTime()-start.getTime()>24*3600000) throw new IntegrationError("invalid_time");
+        if (['scheduled','confirmed'].includes(body.status || old.status)) await checkScheduleConflict(start,end,kind,itemId);
         const table = kind === "lesson" ? "lessons" : "appointments";
+        const changedTime=new Date(old.starts_at).getTime()!==start.getTime() || new Date(old.ends_at).getTime()!==end.getTime();
         await pool.query(`UPDATE ${table} SET starts_at=$2,ends_at=$3,status=$4,updated_at=now() WHERE id=$1`, [itemId, start, end, body.status || old.status]);
+        if (kind==='lesson' && changedTime) {
+          const profile=(await pool.query('SELECT timezone,preferred_language FROM student_profiles WHERE user_id=$1',[old.student_id])).rows[0];
+          const language=['ar','Arabic'].includes(profile?.preferred_language)?'ar':'en',zone=validTimezone(profile?.timezone)?profile.timezone:'UTC';
+          const format=new Intl.DateTimeFormat(language,{dateStyle:'medium',timeStyle:'short',timeZone:zone});
+          const tr=followupTranslations[language];
+          await pool.query("UPDATE notifications SET body=$2 WHERE id=(SELECT id FROM notifications WHERE user_id=$1 AND title='notify_lesson' ORDER BY id DESC LIMIT 1)",[old.student_id,`${old.title}\n${tr.reschedule}\n${tr.start}: ${format.format(start)}\n${tr.end}: ${format.format(end)} · ${zone}`]);
+        }
         if (kind === "appointment" && body.timezone) await pool.query("UPDATE appointments SET original_timezone=$2 WHERE id=$1", [itemId, body.timezone]);
         if (body.timezone) await pool.query("INSERT INTO integration_meetings(key,timezone) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET timezone=$2", [`${kind}:${itemId}`, body.timezone]);
+        if(changedTime || (body.status && body.status!==old.status))await pool.query('INSERT INTO academy_audit(actor_id,action,resource) VALUES($1,$2,$3)',[auth(req).user.id,`${kind}_${changedTime?'rescheduled':body.status}`,`${kind}:${itemId}`]);
         await queue(kind, itemId);
       }); res.json({ queued: true });
     });

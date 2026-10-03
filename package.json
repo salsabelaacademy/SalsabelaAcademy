@@ -22,7 +22,8 @@
     "db:migrate:home": "node --env-file-if-exists=.env --import tsx script/apply-home-content.ts",
     "db:migrate:push": "node --env-file-if-exists=.env --import tsx script/apply-push.ts",
     "predev": "node --import tsx script/prepare-backgrounds.ts",
-    "images:prepare": "node --import tsx script/prepare-backgrounds.ts"
+    "images:prepare": "node --import tsx script/prepare-backgrounds.ts",
+    "db:migrate:followup": "node --env-file-if-exists=.env --import tsx script/apply-followup.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

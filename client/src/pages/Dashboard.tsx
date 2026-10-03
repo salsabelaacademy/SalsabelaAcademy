@@ -1,4 +1,7 @@
 import { programLabel } from '@/lib/program-label';
+import { StudentsWorkspace } from '@/components/StudentsWorkspace';
+import { AcademySchedule } from '@/components/AcademySchedule';
+import { LessonActions, FollowupHistory, useLessonUpdates, deviceSchedule } from '@/components/LessonFollowup';
 import { useCourses } from '@/hooks/use-courses';
 import { DashboardShell, DashboardOverview } from "@/components/DashboardLayout";
 import { BrandLoading, ContentTransition } from "@/components/BrandLoading";
@@ -31,7 +34,9 @@ async function request(path: string, method = "GET", body?: unknown) {
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
     throw new Error(
-      r.status === 401
+      data.code === 'schedule_conflict'
+        ? 'scheduleConflict'
+        : r.status === 401
         ? "expired"
         : r.status === 403
           ? "forbidden"
@@ -53,7 +58,7 @@ function ActionForm({
   label?: string;
 }) {
   const { t } = useTranslation();
-  const tr = (k: string) => t("p4." + k);
+  const tr = (k: string) => t((['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -140,7 +145,7 @@ export default function Dashboard() {
   const [location, navigate] = useLocation();
   const search = useSearch();
   const {data: courses = []} = useCourses();
-  const tr = (k: string) => t("p4." + k);
+  const tr = (k: string) => t((['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
   const [tab, setTab] = useState(() => {
     if (location.startsWith('/admin')) return location === '/admin/integrations' ? 'integrations' : 'blog';
     const key = new URLSearchParams(window.location.search).get('tab');
@@ -153,6 +158,7 @@ export default function Dashboard() {
     [refreshing,setRefreshing]=useState(false),
     [busy, setBusy] = useState(false);
   const reload = () => setRevision((v) => v + 1);
+  const {updates, error: updatesError} = useLessonUpdates(revision);
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
     else if (user && location !== getDashboardPath(user.role) && !(user.role === 'admin' && location.startsWith('/admin')))
@@ -244,9 +250,7 @@ export default function Dashboard() {
   };
   const lessonDates = (v: any) => ({
     ...v,
-    startsAt: new Date(v.startsAt).toISOString(),
-    endsAt: new Date(v.endsAt).toISOString(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ...deviceSchedule(v),
   });
   if (loading || !user)
     return (
@@ -372,28 +376,7 @@ export default function Dashboard() {
           )}
           {tab === "students" && admin && (
             <>
-              <h2>{tr("students")}</h2>
-              {data.people.map((p: any) => (
-                <article className="p4-card" data-search-target={"student:"+p.id} key={p.id}>
-                  <h3>{p.name}</h3>
-                  <p>{p.email}</p>
-                  <p>{status(p.status)}</p>
-                  {["active", "suspended"].includes(p.status) && (
-                    <button
-                      className="p4-button"
-                      disabled={busy}
-                      onClick={() =>
-                        act("/admin/users/" + p.id + "/status", "PATCH", {
-                          status:
-                            p.status === "active" ? "suspended" : "active",
-                        })
-                      }
-                    >
-                      {tr(p.status === "active" ? "suspend" : "activate")}
-                    </button>
-                  )}
-                </article>
-              ))}
+              <StudentsWorkspace data={data} date={date} program={program} onDone={reload} busy={busy} updates={updates} updatesError={updatesError} onStatus={p=>act('/admin/users/'+p.id+'/status','PATCH',{status:p.status==='active'?'suspended':'active'})}/>
               <section className="p4-card">
                 <h3>{tr("enroll")}</h3>
                 <ActionForm
@@ -422,8 +405,8 @@ export default function Dashboard() {
           {tab === "lessons" && (
             <>
               <h2>{tr("lessons")}</h2>
-              {admin && (
-                <section className="p4-card">
+              <AcademySchedule lessons={data.lessons} appointments={data.appointments || []} timezone={tz} people={data.people} admin={admin} renderCreate={() => (
+<section className="p4-card">
                   <h3>{tr("create")}</h3>
                   <ActionForm
                     label="create"
@@ -453,9 +436,7 @@ export default function Dashboard() {
                     {tr("linked")}
                   </Link>
                 </section>
-              )}
-              {!admin && <StudentLiveResources timezone={tz} refreshKey={revision} />}
-              {data.lessons.map((l: any) => (
+              )} renderAppointment={a=><section className="p4-card p4-stack"><h3>{date(a.starts_at)}</h3><span className="p4-badge">{status(a.status)}</span>{admin&&<><p>{a.student_id?person(a.student_id):data.applications.find((v:any)=>v.id===a.application_id)?.name}</p>{!['cancelled','completed'].includes(a.status)&&<ActionForm onDone={reload} fields={[{key:'startsAt',label:'start',type:'datetime-local',value:localTime(a.starts_at)},{key:'endsAt',label:'end',type:'datetime-local',value:localTime(a.ends_at)}]} action={v=>request('/admin/appointments/'+a.id,'PATCH',lessonDates(v))}/>}<div className="p4-row">{!['cancelled','completed'].includes(a.status)&&<><button className="p4-button" disabled={busy} onClick={()=>act('/admin/appointments/'+a.id,'PATCH',{status:'completed'})}>{tr('complete')}</button><button className="p4-button" disabled={busy} onClick={()=>act('/admin/appointments/'+a.id,'PATCH',{status:'cancelled'})}>{tr('cancel')}</button></>}</div></>}</section>} renderLesson={(l: any) => (
                 <article className="p4-card p4-stack" data-search-target={"lesson:"+l.id} key={l.id}>
                   <h3>{l.title}</h3>
                   <p>
@@ -465,6 +446,7 @@ export default function Dashboard() {
                   <span className="p4-badge">{status(l.status)}</span>
                   {admin ? (
                     <>
+                      <LessonActions lesson={l} onDone={reload}/>
                       <ActionForm
                         onDone={reload}
                         label="editLesson"
@@ -510,30 +492,6 @@ export default function Dashboard() {
                       />
                       {l.status !== "cancelled" && (
                         <>
-                          <ActionForm
-                            onDone={reload}
-                            fields={[
-                              {
-                                key: "startsAt",
-                                label: "start",
-                                type: "datetime-local",
-                                value: localTime(l.starts_at),
-                              },
-                              {
-                                key: "endsAt",
-                                label: "end",
-                                type: "datetime-local",
-                                value: localTime(l.ends_at),
-                              },
-                            ]}
-                            action={(v) =>
-                              request(
-                                "/admin/lessons/" + l.id,
-                                "PATCH",
-                                lessonDates(v),
-                              )
-                            }
-                          />
                           <div className="p4-row">
                             {l.status === "scheduled" && (
                               <button
@@ -577,8 +535,9 @@ export default function Dashboard() {
                       )}
                     </>
                   )}
+                  <FollowupHistory updates={updates} error={updatesError} lessonId={l.id}/>
                 </article>
-              ))}
+              )}/>
               {!data.lessons.length && <p>{tr("empty")}</p>}
             </>
           )}
