@@ -1,3 +1,5 @@
+import {registerConversations} from './conversations';
+import {registerRecurringLessons} from './recurring-lessons';
 import { dateOfBirth } from '../shared/account-details';
 import { registerDashboardSearch } from "./dashboard-search";
 import { registerLessonFollowups } from './lesson-followup';
@@ -55,6 +57,9 @@ export function registerPortalRoutes(app: Express) {
     next();
   });
   registerLessonFollowups(app);
+  app.patch('/api/notifications/read-all',requireAuth(['admin','student']),run(async(req,res)=>{await pool.query('UPDATE notifications SET read_at=now() WHERE user_id=$1 AND read_at IS NULL',[(req as any).auth.user.id]);res.json({ok:true});}));
+  registerConversations(app);
+  registerRecurringLessons(app);
   registerDashboardSearch(app);
   registerAvatars(app, publicLimit);
   registerPushRoutes(app, publicLimit);
@@ -212,7 +217,7 @@ export function registerPortalRoutes(app: Express) {
           [u.id],
         ),
         rows(
-          "SELECT m.*,s.name AS sender_name,r.name AS recipient_name FROM messages m JOIN users s ON s.id=m.sender_id JOIN users r ON r.id=m.recipient_id WHERE sender_id=$1 OR recipient_id=$1 ORDER BY m.created_at DESC",
+          "SELECT m.*,s.name AS sender_name,r.name AS recipient_name FROM messages m JOIN users s ON s.id=m.sender_id JOIN users r ON r.id=m.recipient_id WHERE sender_id=$1 OR recipient_id=$1 ORDER BY m.created_at DESC LIMIT 100",
           [u.id],
         ),
         rows(

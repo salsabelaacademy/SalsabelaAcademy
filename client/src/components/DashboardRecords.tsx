@@ -15,7 +15,7 @@ export function DashboardRecords({items,children,searchText,status,focusKind}:{i
 }
 export function AuditEntry({entry,date}:{entry:any;date:(s:string)=>string}){
  const {t,i18n}=useTranslation(),tr=(k:string)=>t('refinement.'+k);
- const known=['lesson_created','lesson_rescheduled','lesson_completed','lesson_cancelled','lesson_report','lesson_issue','appointment_rescheduled','appointment_confirmed','appointment_completed','appointment_cancelled','appointment_requested','appointment_no_show'];
+ const known=['lesson_series_created','lesson_created','lesson_rescheduled','lesson_completed','lesson_cancelled','lesson_report','lesson_issue','appointment_rescheduled','appointment_confirmed','appointment_completed','appointment_cancelled','appointment_requested','appointment_no_show'];
  const action=known.includes(entry.action)?tr(entry.action):tr(({POST:'create',PATCH:'update',PUT:'update',DELETE:'remove'} as Record<string,string>)[entry.action]||'recorded');
  const resource=String(entry.resource||''),kind=/lesson/.test(resource)?'lessonRecord':/appointment/.test(resource)?'assessmentRecord':/application/.test(resource)?'applicationRecord':/user|student/.test(resource)?'studentRecord':/notification/.test(resource)?'notificationRecord':/account|profile/.test(resource)?'accountRecord':/message/.test(resource)?'messageRecord':/setting/.test(resource)?'settingsRecord':/session/.test(resource)?'sessionRecord':/integration/.test(resource)?'integrationRecord':/post/.test(resource)?'blogRecord':'otherRecord';
  const id=resource.match(/(?:[:/])(\d+)(?:$|\/)/)?.[1];

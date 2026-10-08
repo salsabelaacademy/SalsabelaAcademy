@@ -1,3 +1,5 @@
+import {NotificationCenter} from '@/components/NotificationCenter';
+import {RecurringLessonForm} from '@/components/RecurringLessonForm';
 import { DashboardRecords, AuditEntry } from '@/components/DashboardRecords';
 import { programLabel } from '@/lib/program-label';
 import { StudentsWorkspace } from '@/components/StudentsWorkspace';
@@ -7,6 +9,7 @@ import { useCourses } from '@/hooks/use-courses';
 import { DashboardShell, DashboardOverview } from "@/components/DashboardLayout";
 import { BrandLoading, ContentTransition } from "@/components/BrandLoading";
 import { useEffect, useState, lazy, Suspense, type FormEvent } from "react";
+const ConversationWorkspace=lazy(()=>import('@/components/ConversationWorkspace').then(m=>({default:m.ConversationWorkspace})));
 const DashboardProfile = lazy(() => import('@/components/DashboardProfile').then(module => ({default: module.DashboardProfile})));
 const TestimonialManager = lazy(() => import('@/components/TestimonialManager').then(module => ({default: module.TestimonialManager})));
 const AdminArticles = lazy(() => import('./Admin'));
@@ -159,7 +162,7 @@ export default function Dashboard() {
     [refreshing,setRefreshing]=useState(false),
     [busy, setBusy] = useState(false);
   const reload = () => setRevision((v) => v + 1);
-  const {updates, error: updatesError} = useLessonUpdates(revision);
+  const {updates, error: updatesError} = useLessonUpdates(revision,Boolean(user));
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
     else if (user && location !== getDashboardPath(user.role) && !(user.role === 'admin' && location.startsWith('/admin')))
@@ -175,21 +178,16 @@ export default function Dashboard() {
   }, [location, search, user?.role]);
   useEffect(() => {
     if (!user) return;
-    let live = true;
-    setRefreshing(true);
-    request("/portal")
-      .then((d) => {
-        if (live) {
-          setData(d);
-          setError("");
-        }
-      })
-      .catch((e) => {
-        if (live) setError(e.message);
-      }).finally(()=>{if(live)setRefreshing(false);});
-    return () => {
-      live = false;
-    };
+    let live = true, fetching=false;
+    const controller=new AbortController();
+    const refresh=async(initial=false)=>{if(fetching||document.hidden)return;fetching=true;if(initial)setRefreshing(true);try{const r=await fetch('/api/portal',{credentials:'include',signal:controller.signal});if(!r.ok)throw new Error(r.status===401?'expired':'failed');const d=await r.json();if(live){setData(d);setError('');}}catch(e){if(live&&!(e instanceof Error&&e.name==='AbortError'))setError(e instanceof Error?e.message:'failed');}finally{fetching=false;if(live)setRefreshing(false);}};
+    void refresh(true);
+    const timer=setInterval(()=>void refresh(),10000);
+    const foreground=()=>{if(!document.hidden)void refresh();};
+    document.addEventListener('visibilitychange',foreground);
+    window.addEventListener('focus',foreground);
+    window.addEventListener('academy:data-changed',foreground);
+    return ()=>{live=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',foreground);window.removeEventListener('focus',foreground);window.removeEventListener('academy:data-changed',foreground);};
   }, [user, revision]);
   useEffect(()=>{
     const target=new URLSearchParams(search).get('focus');
@@ -405,7 +403,7 @@ export default function Dashboard() {
               <h2>{tr("lessons")}</h2>
               <AcademySchedule lessons={data.lessons} appointments={data.appointments || []} timezone={tz} people={data.people} admin={admin} renderCreate={() => (
 <section className="p4-card">
-                  <h3>{tr("create")}</h3>
+                  <h3>{t("dashboardUpdate.single")}</h3>
                   <ActionForm
                     label="create"
                     onDone={reload}
@@ -430,6 +428,7 @@ export default function Dashboard() {
                       request("/admin/lessons", "POST", lessonDates(v))
                     }
                   />
+                  <RecurringLessonForm people={data.people} timezone={tz} onDone={reload}/>
                   <Link className="p4-text-link" href="/admin/integrations">
                     {tr("linked")}
                   </Link>
@@ -552,71 +551,8 @@ export default function Dashboard() {
               )}</DashboardRecords>              {!data.attendance.length && <p>{tr("empty")}</p>}
             </>
           )}
-          {tab === "messages" && (
-            <>
-              <div className="dash-page-heading"><h2>{tr("messages")}</h2><p>{t('refinement.messagesHint')}</p></div>
-              <section className="p4-card">
-                <ActionForm
-                  label="send"
-                  onDone={reload}
-                  action={(v) => request("/messages", "POST", v)}
-                  fields={[
-                    {
-                      key: "recipientId",
-                      label: admin ? "student" : "brand",
-                      options: options(
-                        data.people.filter((p: any) => p.status === "active"),
-                        (p) => p.name,
-                      ),
-                    },
-                    { key: "subject" },
-                    { key: "body", type: "textarea" },
-                  ]}
-                />
-              </section>
-              <DashboardRecords items={data.messages} searchText={m=>[m.subject,m.body,m.sender_name,m.recipient_name].join(' ')} status={m=>m.recipient_id===user.id?'received':'sent'} focusKind="message">{(m: any) => (
-                <article className="p4-card" data-search-target={"message:"+m.id} key={m.id}>
-                  <h3>{m.subject}</h3>
-                  <p>
-                    {m.sender_name} → {m.recipient_name}
-                  </p>
-                  <p className="whitespace-pre-wrap">{m.body}</p>
-                  <p>{date(m.created_at)}</p>
-                  {m.recipient_id === user.id && !m.read_at && (
-                    <button
-                      className="p4-button"
-                      disabled={busy}
-                      onClick={() => act("/messages/" + m.id + "/read")}
-                    >
-                      {tr("markRead")}
-                    </button>
-                  )}
-                </article>
-              )}</DashboardRecords>            </>
-          )}
-          {tab === "notifications" && (
-            <>
-              <div className="dash-page-heading"><h2>{tr("notifications")}</h2><p>{t('refinement.notificationsHint')}</p></div>
-              <DashboardRecords items={[...data.notifications].sort((a:any,b:any)=>Number(Boolean(a.read_at))-Number(Boolean(b.read_at))||new Date(b.created_at).getTime()-new Date(a.created_at).getTime())} searchText={n=>[n.title.startsWith('notify_')?tr(n.title):n.title,n.body].join(' ')} status={n=>n.read_at?'read':'unread'} focusKind="notification">{(n: any) => (
-                <article className="p4-card" data-search-target={"notification:"+n.id} key={n.id}>
-                  <time>{date(n.created_at)}</time>
-                  <h3>
-                    {n.title.startsWith("notify_") ? tr(n.title) : n.title}
-                  </h3>
-                  <p>{n.body}</p>
-                  {!n.read_at && (
-                    <button
-                      className="p4-button"
-                      disabled={busy}
-                      onClick={() => act("/notifications/" + n.id + "/read", "PATCH")}
-                    >
-                      {tr("markRead")}
-                    </button>
-                  )}
-                </article>
-              )}</DashboardRecords>              {!data.notifications.length && <p>{tr("empty")}</p>}
-            </>
-          )}
+          {tab === "messages" && <ConversationWorkspace/>}
+          {tab === "notifications" && <NotificationCenter items={data.notifications} date={date} onDone={reload}/>}
           {tab === "contactInbox" && admin && (
             <>
               <div className="dash-page-heading"><h2>{tr("contactInbox")}</h2><p>{t('refinement.contactHint')}</p></div>

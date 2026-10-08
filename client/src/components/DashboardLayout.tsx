@@ -1,3 +1,7 @@
+import {lazy,Suspense} from 'react';
+import {MessageCircle} from 'lucide-react';
+import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetDescription} from './ui/sheet';
+const QuickConversations=lazy(()=>import('./ConversationWorkspace').then(m=>({default:m.ConversationWorkspace})));
 import { DashboardSearch, type SearchRecord } from './DashboardSearch';
 import { LessonCompletion } from './LessonCompletion';
 import {useLocation} from 'wouter';
@@ -27,6 +31,7 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
   const menu = useRef<HTMLButtonElement>(null);
   const { language } = useLanguage();
   const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('salsabela-sidebar-collapsed') === 'true'; } catch { return false; } });
+  const [chatOpen,setChatOpen]=useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickOpen,setQuickOpen]=useState(false);
@@ -54,6 +59,8 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
     <div className="dash-account"><span className="dash-avatar"><AccountAvatar user={user} /></span><div><strong>{user.name}</strong><small>{tr(admin ? 'adminRole' : 'studentRole')}</small></div><button type="button" onClick={onLogout} aria-label={tr('signout')} title={tr('signout')}><LogOut size={19} aria-hidden="true" /></button></div>
   </>;
   return <div className={`dash-root${collapsed ? ' dash-collapsed' : ''}`}>
+    {tab!=='messages'&&<button type="button" className="dashboard-chat-launcher" aria-label={t('dashboardUpdate.conversations')} onClick={()=>setChatOpen(true)}><MessageCircle size={25} aria-hidden/></button>}
+    <Sheet open={chatOpen} onOpenChange={setChatOpen}><SheetContent side={language==='ar'?'left':'right'} className="dashboard-chat-sheet" dir={language==='ar'?'rtl':'ltr'}><SheetHeader><SheetTitle>{t('dashboardUpdate.conversations')}</SheetTitle><SheetDescription>{t('dashboardUpdate.conversationIntro')}</SheetDescription></SheetHeader>{chatOpen&&<Suspense fallback={<p role="status">{tr('loading')}</p>}><QuickConversations/></Suspense>}</SheetContent></Sheet>
     <a className="p4-skip" href="#dashboard-content">{tr('skip')}</a>
     <aside id="dashboard-sidebar" className="dash-sidebar">{navigation}</aside>
     <dialog ref={dialog} aria-label={tr("menu")} className="dash-drawer" onClose={() => { setDrawerOpen(false); menu.current?.focus(); }} onClick={e => { if (e.target === dialog.current) dialog.current.close(); }}><button type="button" className="dash-close" aria-label={tr('close')} onClick={() => dialog.current?.close()}><X aria-hidden="true" /></button>{navigation}</dialog>
@@ -99,9 +106,10 @@ export function DashboardOverview({admin, user, data, timezone, refreshKey, onTa
       <section className="dash-panel"><div className="dash-section-heading"><h2>{tr('recentMessages')}</h2><button className="dash-text-button" onClick={() => onTab('messages')}>{tr('viewAll')}<Arrow size={17} aria-hidden="true" /></button></div>{data.messages.slice(0, 3).map((message: any) => <button key={message.id} className="dash-message" onClick={() => onTab('messages')}><span className="dash-message-icon"><Mail size={20} aria-hidden="true" /></span><span><strong>{message.subject}</strong><span>{message.body}</span></span><Arrow size={18} aria-hidden="true" /></button>)}{!data.messages.length && <p className="dash-muted">{tr('empty')}</p>}</section>
       {!admin && <section className="dash-panel dash-live"><h2>{tr('resourcesTitle')}</h2><StudentLiveResources timezone={timezone} refreshKey={refreshKey} /></section>}
     </div><aside className="dash-overview-aside">
-      <LessonCompletion lessons={data.lessons} attendance={data.attendance} timezone={timezone} admin={admin} onOpen={()=>onTab('lessons')} onAttendance={()=>onTab('attendance')} /><section className="dash-action-panel"><h2>{tr('quickActions')}</h2><p>{tr(admin ? 'workspaceAdmin' : 'workspaceStudent')}</p>{(admin ? ['applications','lessons','students'] : ['lessons','attendance','profile']).map(key => {const Icon=icons[key]; return <button key={key} onClick={() => onTab(key)}><Icon size={18} aria-hidden="true" /><span>{tr(key)}</span><ArrowUpRight size={17} aria-hidden="true" /></button>;})}</section>
-      <section className="dash-panel"><h2>{tr('secondaryStats')}</h2><dl className="dash-activity">{Object.entries(data.stats).filter(([key]) => !primary.includes(key) && key !== 'completedUnits').map(([key,value]) => <div key={key}><dt>{tr(key)}</dt><dd>{number(key,value)}</dd></div>)}</dl></section>
-      {admin && <section className="dash-panel"><h2>{tr('integrations')}</h2><div className="dash-connections">{data.connections.map((connection: any) => <div key={connection.provider}><span>{t('integrations.'+connection.provider)}</span><span className="dash-connection-state">{t('integrations.'+connection.status)}</span></div>)}</div><Link className="dash-text-button" href="/admin/integrations">{tr('connectionDetails')}<Arrow size={17} aria-hidden="true" /></Link></section>}
+      <LessonCompletion lessons={data.lessons} attendance={data.attendance} timezone={timezone} admin={admin} onOpen={()=>onTab('lessons')} onAttendance={()=>onTab('attendance')} />
     </aside></div>
+    <div className="dash-overview-bottom"><section className="dash-action-panel"><h2>{tr('quickActions')}</h2><p>{tr(admin ? 'workspaceAdmin' : 'workspaceStudent')}</p>{(admin ? ['applications','lessons','students'] : ['lessons','attendance','profile']).map(key => {const Icon=icons[key]; return <button key={key} onClick={() => onTab(key)}><Icon size={18} aria-hidden="true" /><span>{tr(key)}</span><ArrowUpRight size={17} aria-hidden="true" /></button>;})}</section>
+      <section className="dash-panel"><h2>{tr('secondaryStats')}</h2><dl className="dash-activity">{Object.entries(data.stats).filter(([key]) => !primary.includes(key) && key !== 'completedUnits').map(([key,value]) => <div key={key}><dt>{tr(key)}</dt><dd>{number(key,value)}</dd></div>)}</dl></section>
+      {admin && <section className="dash-panel"><h2>{tr('integrations')}</h2><div className="dash-connections">{data.connections.map((connection: any) => <div key={connection.provider}><span>{t('integrations.'+connection.provider)}</span><span className="dash-connection-state">{t('integrations.'+connection.status)}</span></div>)}</div><Link className="dash-text-button" href="/admin/integrations">{tr('connectionDetails')}<Arrow size={17} aria-hidden="true" /></Link></section>}</div>
   </>;
 }

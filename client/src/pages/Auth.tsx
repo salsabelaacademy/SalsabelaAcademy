@@ -1,3 +1,4 @@
+import {Eye,EyeOff,ShieldCheck} from 'lucide-react';
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -6,6 +7,8 @@ import { PublicShell } from "@/components/PublicShell";
 import TurnstileWidget, {
   useTurnstileConfig,
 } from "@/components/TurnstileWidget";
+// Optional self-hosted login image: put it in client/public/images/ and set this path.
+const LOGIN_BACKGROUND: string | undefined = undefined; // e.g. '/images/login-background.webp'
 export default function AuthPage() {
   const { t } = useTranslation(),
     { user, loading, login } = useAuth();
@@ -46,13 +49,14 @@ export default function AuthPage() {
       <section className="p4-section academy-auth">
         <div className="academy-auth-intro"><p className="p4-eyebrow">{t("p4.brand")}</p><h1>{t("experience.loginTitle")}</h1><p>{t("experience.loginIntro")}</p></div>
         <div className="academy-auth-grid">
-        <aside className="academy-auth-new" aria-labelledby="new-student-title" data-reveal>
+        <aside className="academy-auth-new" aria-labelledby="new-student-title" style={LOGIN_BACKGROUND?{backgroundImage:`linear-gradient(140deg,rgba(10,34,43,.94),rgba(10,34,43,.7)),url(${LOGIN_BACKGROUND})`}:undefined}>
+          <img className="auth-brand-symbol" src="/logo-icon.png" alt="" width={76} height={76}/><p className="auth-welcome">{t('dashboardUpdate.loginWelcome')}</p><p>{t('dashboardUpdate.loginBody')}</p>
           <h2 id="new-student-title">{t("admission.newTitle")}</h2>
           <p>{t("admission.newBody")}</p>
           <ol>{[1,2,3].map(n=><li key={n}>{t("admission.step"+n)}</li>)}</ol>
           <Link href="/apply" className="p4-button">{t("admission.start")}</Link>
         </aside>
-        <div className="academy-auth-existing" data-reveal>
+        <div className="academy-auth-existing"><p className="auth-security"><ShieldCheck size={17} aria-hidden/>{t("dashboardUpdate.secureLogin")}</p>
         <h2>{t("p4.login")}</h2><p>{t("experience.loginHint")}</p>
         <form onSubmit={submit} className="p4-card p4-form-grid">
           <label className="p4-full">
@@ -67,14 +71,14 @@ export default function AuthPage() {
           </label>
           <label className="p4-full">
             {t("admission.password")}
-            <input
+            <span className="auth-password-field"><input
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
-            />
+            /><button type="button" aria-label={t("experience."+(showPassword?"hidePassword":"showPassword"))} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={20}/>:<Eye size={20}/>}</button></span>
           </label>
-          <button type="button" className="p4-text-link p4-full auth-password-toggle" aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{t("experience."+(showPassword?"hidePassword":"showPassword"))}</button>
+
           <div className="p4-full">
             {config?.enabled && config.siteKey ? (
               <TurnstileWidget

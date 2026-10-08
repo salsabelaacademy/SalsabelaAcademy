@@ -21,10 +21,10 @@ function StudentReviews({items}:{items:Testimonial[]}){
    <div className="text-center max-w-2xl mx-auto mb-10"><h2 id="reviews-heading" className="text-3xl lg:text-4xl font-display font-bold mb-4">{tr('feedback')}</h2><p className="text-slate-300">{tr('feedbackIntro')}</p></div>
    <div data-no-reveal onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onFocusCapture={()=>setFocusHold(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget))setFocusHold(false);}} aria-roledescription={t("pageUi.HomeContent.carousel")} aria-label={tr('feedback')}>
     <div ref={viewport} className="overflow-hidden" onPointerDown={()=>setRunning(false)}><div className="flex -ms-6 touch-pan-y">
-     {items.map(item=><div key={item.id} className="min-w-0 flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] ps-6"><figure className="h-full rounded-2xl border border-white/15 bg-white/5 p-7 flex flex-col">
+     {items.map(item=><div key={item.id} className="min-w-0 flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] ps-6"><figure className="student-review-card h-full rounded-2xl border border-white/15 bg-white/5 p-7 flex flex-col">
       <span aria-hidden="true" className="text-5xl leading-none text-amber-300 font-serif">“</span>
       <blockquote className="text-base leading-8 whitespace-pre-line break-words flex-1">{item.quote}</blockquote>
-      <figcaption className="mt-7 pt-5 border-t border-white/15"><p className="font-bold text-amber-200 break-words">{item.name}</p>{item.location&&<p className="text-sm text-slate-300 mt-1 break-words">{item.location}</p>}</figcaption>
+      <figcaption className="review-person mt-7 pt-5 border-t border-white/15"><img src="/default-male-avatar.svg" alt={t('dashboardUpdate.defaultAvatar')} width={48} height={48} loading="lazy"/><div><p className="font-bold text-amber-200 break-words">{item.name}</p>{item.location&&<p className="text-sm text-slate-300 mt-1 break-words">{item.location}</p>}</div></figcaption>
      </figure></div>)}
     </div></div>
     {canScroll&&<div className="flex flex-wrap justify-center gap-3 mt-7">

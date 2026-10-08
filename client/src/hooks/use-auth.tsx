@@ -1,3 +1,4 @@
+import {queryClient} from '@/lib/queryClient';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type AppRole = "student" | "admin";
@@ -55,7 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     request("/api/auth/me")
       .then(data => {
         if (!isSupportedUser(data.user)) throw new Error("Unsupported account role");
-        setUser(data.user);
+        queryClient.clear();
+    setUser(data.user);
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -76,11 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await request("/api/auth/logout", { method: "POST" });
+    queryClient.clear();
     setUser(null);
   }
 
   async function logoutAll() {
     await request("/api/auth/logout-all", { method: "POST" });
+    queryClient.clear();
     setUser(null);
   }
 

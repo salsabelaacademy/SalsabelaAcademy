@@ -10,9 +10,9 @@ export async function followupRequest(path: string, method='GET', body?: unknown
   if (!response.ok) throw new Error(value.code==='schedule_conflict'?'scheduleConflict':value.code==='invalid_time'?'invalid':['invalid','missing','limited','conflict','cancelled','reportFuture'].includes(value.code)?value.code:'failed');
   return value;
 }
-export function useLessonUpdates(revision: number) {
+export function useLessonUpdates(revision: number, enabled=true) {
   const [updates,setUpdates]=useState<any[]>([]),[error,setError]=useState('');
-  useEffect(()=>{let live=true;followupRequest('/portal/lesson-updates').then(value=>{if(live){setUpdates(value);setError('');}}).catch(()=>{if(live)setError('failed');});return()=>{live=false;};},[revision]);
+  useEffect(()=>{if(!enabled)return;let live=true,busy=false;const refresh=async()=>{if(busy||document.hidden)return;busy=true;try{const value=await followupRequest('/portal/lesson-updates');if(live){setUpdates(value);setError('');}}catch{if(live)setError('failed');}finally{busy=false;}};void refresh();const timer=setInterval(()=>void refresh(),10000);const foreground=()=>void refresh();window.addEventListener('academy:data-changed',foreground);document.addEventListener('visibilitychange',foreground);return()=>{live=false;clearInterval(timer);window.removeEventListener('academy:data-changed',foreground);document.removeEventListener('visibilitychange',foreground);};},[revision,enabled]);
   return {updates,error};
 }
 export function FollowupHistory({updates,error,lessonId,studentId}:{updates:any[];error?:string;lessonId?:number;studentId?:number}) {
@@ -46,6 +46,7 @@ export function LessonActions({lesson,onDone}:{lesson:any;onDone:()=>void}) {
         const body=mode==='report'?{kind:'report',covered:values.covered,adjustPlan:values.adjustPlan==='yes',behavior:Number(values.behavior),participation:Number(values.participation),comment:values.comment,requestKey}:{kind:'issue',issueKind:values.issueKind,comment:values.comment,requestKey};
         await followupRequest(`/admin/lessons/${lesson.id}/followup`,'POST',body);setMessage('sent');
       }
+      setMode(null);
       onDone();
     } catch(e) {setMessage(e instanceof Error?e.message:'failed');} finally {setBusy(false);}
   }

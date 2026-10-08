@@ -42,7 +42,7 @@ export default function Integrations() {
     if (user?.role !== "admin") return;
     void reload().catch(e => setError(e.message)).finally(() => setInitializing(false));
     if (new URLSearchParams(window.location.search).get("oauth") === "error") setNotice("oauthError");
-    const timer = setInterval(() => { void Promise.all([api("/admin/integrations/jobs"), api("/admin/integrations")]).then(([j, c]) => { setJobs(j); setConnections(c); }).catch(() => {}); }, 15000);
+    const timer = setInterval(() => { if(document.hidden)return;void Promise.all([api("/admin/integrations/jobs"), api("/admin/integrations")]).then(([j, c]) => { setJobs(j); setConnections(c.filter((v:Row)=>v.provider!=='drive')); }).catch(() => {}); }, 15000);
     return () => clearInterval(timer);
   }, [user]);
   async function run(fn: () => Promise<any>, queued = false) {

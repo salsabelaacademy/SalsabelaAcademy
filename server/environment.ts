@@ -1,4 +1,5 @@
 export function validateEnvironment(env:NodeJS.ProcessEnv=process.env){
+ if(env.GEMINI_MODEL&&!/^[a-z0-9.-]+$/.test(env.GEMINI_MODEL))throw new Error('Invalid GEMINI_MODEL');
  if(env.NODE_ENV!=='production')return;
  const missing=['DATABASE_URL','SESSION_SECRET','FRONTEND_URL','TURNSTILE_SITE_KEY','TURNSTILE_SECRET_KEY','RESEND_API_KEY','RESEND_FROM'].filter(k=>!env[k]);
  if(missing.length)throw new Error('Missing production variables: '+missing.join(', '));
