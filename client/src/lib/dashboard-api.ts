@@ -10,6 +10,6 @@ export async function conversationApi(
     body: body ? JSON.stringify(body) : undefined,
   });
   const value = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(value.code || "failed");
+  if (!r.ok) throw new Error(r.status === 401 ? "session_expired" : value.code || "failed");
   return value;
 }

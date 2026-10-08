@@ -5,7 +5,7 @@ export function emailReady(env = process.env) {
   try {
     const u = new URL(env.FRONTEND_URL || "");
     return Boolean(
-      env.RESEND_API_KEY && env.RESEND_FROM && u.protocol === "https:",
+      env.RESEND_API_KEY?.trim() && env.RESEND_FROM?.trim() && u.protocol === "https:",
     );
   } catch {
     return false;

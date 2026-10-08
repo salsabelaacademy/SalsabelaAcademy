@@ -38,7 +38,7 @@ async function request(path: string, method = "GET", body?: unknown) {
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
     throw new Error(
-      data.code === 'schedule_conflict'
+      data.code === 'schema_update_required' ? 'schema_update_required' : data.code === 'schedule_conflict'
         ? 'scheduleConflict'
         : r.status === 401
         ? "expired"
@@ -62,7 +62,7 @@ function ActionForm({
   label?: string;
 }) {
   const { t } = useTranslation();
-  const tr = (k: string) => t((['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
+  const tr = (k: string) => t((k==='schema_update_required'?'finalPolish.': ['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -145,11 +145,11 @@ const dashboardSections = Array.from(new Set([...adminDashboardSections, ...stud
 export default function Dashboard() {
   const { t } = useTranslation(),
     { language, setLanguage } = useLanguage(),
-    { user, loading, logout, logoutAll } = useAuth();
+    { user, loading, logout } = useAuth();
   const [location, navigate] = useLocation();
   const search = useSearch();
   const {data: courses = []} = useCourses();
-  const tr = (k: string) => t((['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
+  const tr = (k: string) => t((k==='schema_update_required'?'finalPolish.': ['scheduleConflict','invalid'].includes(k) ? 'followup.' : 'p4.') + k);
   const [tab, setTab] = useState(() => {
     if (location.startsWith('/admin')) return location === '/admin/integrations' ? 'integrations' : 'blog';
     const key = new URLSearchParams(window.location.search).get('tab');
@@ -607,32 +607,7 @@ export default function Dashboard() {
               <section className="dash-panel settings-security"><h2>{tr("accountSecurity")}</h2><Link className="p4-text-link" href="/account/password">
                 {tr("password")}
               </Link>
-              <h3>{tr("sessions")}</h3>
-              {data.sessions.map((s: any) => (
-                <article className="p4-card p4-row" key={s.id}>
-                  <div><time>{date(s.created_at)}</time>{s.current&&<span className="session-current">{t("preferences.currentSession")}</span>}</div>
-                  <button
-                    disabled={busy}
-                    className="p4-button"
-                    onClick={() => act("/portal/sessions/" + s.id, "DELETE")}
-                  >
-                    {tr("revoke")}
-                  </button>
-                </article>
-              ))}
-              <button
-                className="p4-button"
-                onClick={async () => {
-                  try {
-                    await logoutAll();
-                    navigate("/login");
-                  } catch {
-                    setNotice("failed");
-                  }
-                }}
-              >
-                {tr("logoutAll")}
-              </button></section>
+              </section>
             </>
           )}
         </div></Suspense></ContentTransition>

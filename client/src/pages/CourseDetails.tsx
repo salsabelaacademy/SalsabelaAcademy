@@ -298,7 +298,7 @@ export default function CourseDetails() {
               </div>
 
               <div className="pt-4 flex flex-wrap gap-4">
-                <Link href={`/contact?tab=trial&course=${encodeURIComponent(course.title)}`}>
+                <Link href={`/apply?course=${encodeURIComponent(course.title)}`}>
                   <Button size="lg" variant="outline" className="px-8 h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all">
                     {t("courses.free_trial")}
                   </Button>
@@ -356,7 +356,7 @@ export default function CourseDetails() {
               {t("pageUi.CourseDetails.Your_first_session_is_completely_free_No_credit_card_required")}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href={`/contact?tab=trial&course=${encodeURIComponent(course.title)}`}>
+              <Link href={`/apply?course=${encodeURIComponent(course.title)}`}>
                 <Button size="lg" className="bg-white text-primary hover:bg-white/90 h-14 px-8 text-lg font-bold rounded-xl shadow-lg">
                   {t("courses.free_trial")}
                 </Button>

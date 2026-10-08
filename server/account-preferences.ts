@@ -1,3 +1,4 @@
+import { serviceError } from "./service-errors";
 import { emailReady } from "./email-delivery";
 import type { Express } from "express";
 import { z } from "zod";
@@ -15,10 +16,17 @@ export function registerAccountPreferences(app: Express) {
         );
         res.json({
           configured: emailReady(),
+          missing: ["RESEND_API_KEY", "RESEND_FROM", "FRONTEND_URL"].filter(
+            (key) => !process.env[key]?.trim(),
+          ),
+          invalidOrigin: Boolean(
+            process.env.FRONTEND_URL &&
+              !/^https:\/\//.test(process.env.FRONTEND_URL),
+          ),
           counts: Object.fromEntries(rows.map((r) => [r.status, r.count])),
         });
       } catch (e) {
-        next(e);
+        if (!serviceError(e, res)) next(e);
       }
     },
   );
@@ -32,7 +40,7 @@ export function registerAccountPreferences(app: Express) {
         );
         res.json({ queued: Boolean(result.rowCount), count: result.rowCount });
       } catch (e) {
-        next(e);
+        if (!serviceError(e, res)) next(e);
       }
     },
   );
@@ -45,7 +53,7 @@ export function registerAccountPreferences(app: Express) {
       );
       res.json({ emailUpdates: rows[0]?.email_updates ?? true });
     } catch (e) {
-      next(e);
+      if (!serviceError(e, res)) next(e);
     }
   });
   app.patch("/api/portal/preferences", auth, async (req, res, next) => {
@@ -62,7 +70,7 @@ export function registerAccountPreferences(app: Express) {
     } catch (e) {
       if (e instanceof z.ZodError)
         return res.status(400).json({ code: "validation" });
-      next(e);
+      if (!serviceError(e, res)) next(e);
     }
   });
 }

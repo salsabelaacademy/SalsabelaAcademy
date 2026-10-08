@@ -2,7 +2,13 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { MessageCircle, X, Home, Sparkles, ArrowUpRight } from "lucide-react";
+import {
+  MessageCircle,
+  X,
+  Home,
+  BookOpenCheck,
+  ArrowUpRight,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { conversationApi } from "@/lib/dashboard-api";
 const Workspace = lazy(() =>
@@ -105,7 +111,7 @@ export function FloatingMessenger({
                 className="messenger-home-card"
                 onClick={() => setView("assistant")}
               >
-                <Sparkles />
+                <BookOpenCheck />
                 <span>
                   <strong>{t("dashboardUpdate.assistant")}</strong>
                   <small>{tr("aiHint")}</small>
@@ -134,7 +140,7 @@ export function FloatingMessenger({
               [
                 ["home", Home],
                 ["messages", MessageCircle],
-                ["assistant", Sparkles],
+                ["assistant", BookOpenCheck],
               ] as const
             ).map(([key, Icon]) => (
               <button

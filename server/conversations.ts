@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { pool } from "./db";
 import { requireAuth } from "./auth";
+import { serviceError } from "./service-errors";
 import { aiInput, generateAnswer } from "./gemini";
 const run =
   (fn: RequestHandler): RequestHandler =>
@@ -10,7 +11,7 @@ const run =
     try {
       await fn(req, res, next);
     } catch (error) {
-      next(error);
+      if (!serviceError(error, res)) next(error);
     }
   };
 export function allowedConversation(
@@ -19,10 +20,10 @@ export function allowedConversation(
 ) {
   return Boolean(
     recipient &&
-    recipient.id !== sender.id &&
-    recipient.status === "active" &&
-    ((sender.role === "admin" && recipient.role === "student") ||
-      (sender.role === "student" && recipient.role === "admin")),
+      recipient.id !== sender.id &&
+      recipient.status === "active" &&
+      ((sender.role === "admin" && recipient.role === "student") ||
+        (sender.role === "student" && recipient.role === "admin")),
   );
 }
 const limits = async (key: string, maximum: number, seconds: number) => {
@@ -72,12 +73,10 @@ export function registerConversations(app: Express) {
         "SELECT id,sender_id,recipient_id,subject,body,read_at,created_at FROM messages WHERE ((sender_id=$1 AND recipient_id=$2) OR (sender_id=$2 AND recipient_id=$1)) AND ($3::integer IS NULL OR id<$3) ORDER BY id DESC LIMIT 60",
         [actor.id, other.id, before || null],
       );
-      res
-        .set("Cache-Control", "no-store")
-        .json({
-          messages: messages.rows.reverse(),
-          hasMore: messages.rows.length === 60,
-        });
+      res.set("Cache-Control", "no-store").json({
+        messages: messages.rows.reverse(),
+        hasMore: messages.rows.length === 60,
+      });
     }),
   );
   app.post(
@@ -149,7 +148,7 @@ export function registerConversations(app: Express) {
   app.get("/api/assistant/config", auth, (_req, res) =>
     res
       .set("Cache-Control", "no-store")
-      .json({ configured: Boolean(process.env.GEMINI_API_KEY) }),
+      .json({ configured: Boolean(process.env.GEMINI_API_KEY?.trim()) }),
   );
   app.post(
     "/api/assistant/chat",
@@ -157,7 +156,7 @@ export function registerConversations(app: Express) {
     run(async (req, res) => {
       const actor = (req as any).auth.user,
         input = aiInput.parse(req.body);
-      if (!process.env.GEMINI_API_KEY)
+      if (!process.env.GEMINI_API_KEY?.trim())
         return res.status(503).json({ code: "not_configured" });
       const userKey = createHash("sha256")
         .update("ai:" + actor.id)
@@ -171,15 +170,15 @@ export function registerConversations(app: Express) {
       try {
         res.json({ text: await generateAnswer(input) });
       } catch (error) {
-        res
-          .status(503)
-          .json({
-            code:
-              error instanceof Error &&
-              ["limited", "not_configured"].includes(error.message)
-                ? error.message
-                : "ai_unavailable",
-          });
+        res.status(503).json({
+          code:
+            error instanceof Error &&
+            ["limited", "not_configured", "ai_credentials"].includes(
+              error.message,
+            )
+              ? error.message
+              : "ai_unavailable",
+        });
       }
     }),
   );

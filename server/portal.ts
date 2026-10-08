@@ -1,3 +1,4 @@
+import {serviceError} from "./service-errors";
 import {registerAccountPreferences} from "./account-preferences";
 import {registerConversations} from './conversations';
 import {registerRecurringLessons} from './recurring-lessons';
@@ -28,7 +29,7 @@ const run: (fn: RequestHandler) => RequestHandler =
             code: "validation",
             fields: e.issues.map((i) => i.path.join(".")),
           });
-      next(e);
+      if (!serviceError(e,res)) next(e);
     }
   };
 const rows = async (q: string, args: any[] = []) =>
@@ -73,7 +74,7 @@ export function registerPortalRoutes(app: Express) {
       FROM users u LEFT JOIN student_profiles p ON p.user_id=u.id LEFT JOIN account_details d ON d.user_id=u.id WHERE u.id=$1 AND u.role='student'`,[studentId]);
     if(!account)return res.status(404).json({code:'not_found'});
     const [lessons,attendance,counts]=await Promise.all([
-      rows('SELECT id,student_id,program_id,title,starts_at,ends_at,status,feedback FROM lessons WHERE student_id=$1 ORDER BY starts_at DESC',[studentId]),
+      rows('SELECT l.id,l.student_id,l.program_id,l.title,l.starts_at,l.ends_at,l.status,l.feedback,EXISTS(SELECT 1 FROM lesson_report_claims r WHERE r.lesson_id=l.id) AS has_report FROM lessons l WHERE student_id=$1 ORDER BY starts_at DESC',[studentId]),
       rows('SELECT id,student_id,session_date,status,notes FROM attendance_records WHERE student_id=$1 ORDER BY session_date DESC',[studentId]),
       rows("SELECT kind,count(*)::int AS count FROM lesson_followups WHERE student_id=$1 GROUP BY kind",[studentId])
     ]);
@@ -207,7 +208,7 @@ export function registerPortalRoutes(app: Express) {
         studentAppointments,
       ] = await Promise.all([
         rows(
-          `SELECT * FROM lessons ${admin ? "" : "WHERE student_id=$1"} ORDER BY starts_at DESC NULLS LAST`,
+          `SELECT l.*,EXISTS(SELECT 1 FROM lesson_report_claims r WHERE r.lesson_id=l.id) AS has_report FROM lessons l ${admin ? "" : "WHERE student_id=$1"} ORDER BY starts_at DESC NULLS LAST`,
           admin ? [] : [u.id],
         ),
         rows(

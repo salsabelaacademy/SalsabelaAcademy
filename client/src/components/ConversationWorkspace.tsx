@@ -5,13 +5,20 @@ import { useTranslation } from "react-i18next";
 import {
   Send,
   ArrowLeft,
-  Sparkles,
+  BookOpenCheck,
   MessageCircle,
   Search,
   Trash2,
+  UserRound,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-type Person = { id: number; name: string; role?: string; avatarUrl?: string; unread: number };
+type Person = {
+  id: number;
+  name: string;
+  role?: string;
+  avatarUrl?: string;
+  unread: number;
+};
 type Message = {
   id: number;
   sender_id: number;
@@ -20,7 +27,11 @@ type Message = {
   created_at: string;
 };
 
-export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initialAI?:boolean;focusId?:number;onBack?:()=>void} = {}) {
+export function ConversationWorkspace({
+  initialAI = false,
+  focusId,
+  onBack,
+}: { initialAI?: boolean; focusId?: number; onBack?: () => void } = {}) {
   const { user } = useAuth(),
     { t, i18n } = useTranslation(),
     tr = (k: string) => t("dashboardUpdate." + k),
@@ -58,9 +69,9 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
     queryKey: ["assistant-config", user?.id],
     queryFn: () => conversationApi("/assistant/config"),
     enabled: ai,
-    refetchInterval:30000,
-    refetchIntervalInBackground:false,
-    refetchOnWindowFocus:true,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
   const messages = Array.from(
     new Map(
@@ -70,7 +81,8 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
   const other = people.data?.find((p) => p.id === selected);
   useEffect(() => {
     if (
-      !initialAI && user?.role === "student" &&
+      !initialAI &&
+      user?.role === "student" &&
       people.data?.length === 1 &&
       !autoSelected.current
     ) {
@@ -106,7 +118,7 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
         })
         .catch(() => {});
     }
-  }, [user?.id,focusId]);
+  }, [user?.id, focusId]);
   const choose = (id: number) => {
     setSelected(id);
     setAi(false);
@@ -187,7 +199,7 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
             setText("");
           }}
         >
-          <Sparkles size={19} aria-hidden />
+          <BookOpenCheck size={19} aria-hidden />
           {tr("assistant")}
         </button>
         <label className="conversation-search">
@@ -203,7 +215,19 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
           {people.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : people.isError ? (
-            <button onClick={() => people.refetch()}>{tr("retry")}</button>
+            <div role="alert">
+              <p>
+                {t(
+                  "finalPolish." +
+                    (["schema_update_required", "session_expired"].includes(
+                      (people.error as Error)?.message,
+                    )
+                      ? (people.error as Error).message
+                      : "failed"),
+                )}
+              </p>
+              <button onClick={() => people.refetch()}>{tr("retry")}</button>
+            </div>
           ) : !people.data?.length ? (
             <p>{tr("noPeople")}</p>
           ) : (
@@ -219,12 +243,18 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
                   }
                   onClick={() => choose(person.id)}
                 >
-                  <img
-                    src={person.avatarUrl || (person.role === "admin" ? "/logo-icon.png" : "/default-male-avatar.svg")}
-                    width={42}
-                    height={42}
-                    alt=""
-                  />
+                  {person.avatarUrl || person.role === "admin" ? (
+                    <img
+                      src={person.avatarUrl || "/logo-icon.png"}
+                      width={42}
+                      height={42}
+                      alt=""
+                    />
+                  ) : (
+                    <span className="conversation-avatar">
+                      <UserRound size={24} aria-hidden />
+                    </span>
+                  )}
                   <span>
                     <strong>{person.name}</strong>
                     <small>{tr("activeChat")}</small>
@@ -250,7 +280,10 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
               <button
                 className="conversation-back"
                 onClick={() => {
-                  if(onBack){onBack();return;}
+                  if (onBack) {
+                    onBack();
+                    return;
+                  }
                   setSelected(null);
                   setAi(false);
                 }}
@@ -259,14 +292,18 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
                 <ArrowLeft size={20} />
               </button>
               {ai ? (
-                <Sparkles size={24} aria-hidden />
-              ) : (
+                <BookOpenCheck size={24} aria-hidden />
+              ) : other?.avatarUrl || other?.role === "admin" ? (
                 <img
-                  src={other?.avatarUrl || (other?.role === "admin" ? "/logo-icon.png" : "/default-male-avatar.svg")}
+                  src={other?.avatarUrl || "/logo-icon.png"}
                   width={42}
                   height={42}
                   alt=""
                 />
+              ) : (
+                <span className="conversation-avatar">
+                  <UserRound size={24} aria-hidden />
+                </span>
               )}
               <div>
                 <h3>{ai ? tr("assistant") : other?.name}</h3>
@@ -294,8 +331,22 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
                     <p className="conversation-privacy">{tr("aiPrivacy")}</p>
                     {config.isPending ? (
                       <p>{t("p4.loading")}</p>
+                    ) : config.isError ? (
+                      <div role="alert">
+                        <p>{t("finalPolish.failed")}</p>
+                        <button onClick={() => config.refetch()}>
+                          {tr("retry")}
+                        </button>
+                      </div>
                     ) : (
-                      !config.data?.configured && <p>{tr("notConfigured")}</p>
+                      !config.data?.configured && (
+                        <div>
+                          <p>{tr("notConfigured")}</p>
+                          {user?.role === "admin" && (
+                            <p>{t("finalPolish.aiSetup")}</p>
+                          )}
+                        </div>
+                      )
                     )}
                     {answers.map((answer, i) => (
                       <article
@@ -312,7 +363,19 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
                 ) : (
                   <>
                     {chat.isPending && <p>{t("p4.loading")}</p>}
-                    {chat.isError && <p role="alert">{tr("failed")}</p>}
+                    {chat.isError && (
+                      <p role="alert">
+                        {t(
+                          "finalPolish." +
+                            ([
+                              "schema_update_required",
+                              "session_expired",
+                            ].includes((chat.error as Error)?.message)
+                              ? (chat.error as Error).message
+                              : "failed"),
+                        )}
+                      </p>
+                    )}
                     {chat.data?.hasMore && hasOlder && (
                       <button
                         className="conversation-older"
@@ -349,15 +412,21 @@ export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initi
             </div>
             {error && (
               <p className="conversation-error" role="alert">
-                {tr(
-                  error === "not_configured"
-                    ? "notConfigured"
-                    : error === "limited"
-                      ? "limited"
-                      : ai
-                        ? "aiUnavailable"
-                        : "failed",
-                )}
+                {[
+                  "schema_update_required",
+                  "session_expired",
+                  "ai_credentials",
+                ].includes(error)
+                  ? t("finalPolish." + error)
+                  : tr(
+                      error === "not_configured"
+                        ? "notConfigured"
+                        : error === "limited"
+                          ? "limited"
+                          : ai
+                            ? "aiUnavailable"
+                            : "failed",
+                    )}
               </p>
             )}
             <form className="conversation-compose" onSubmit={submit}>

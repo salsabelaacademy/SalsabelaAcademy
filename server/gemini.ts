@@ -25,9 +25,9 @@ export async function generateAnswer(
   send: typeof fetch = fetch,
   env = process.env,
 ) {
-  const key = env.GEMINI_API_KEY;
+  const key = env.GEMINI_API_KEY?.trim();
   if (!key) throw new Error("not_configured");
-  const model = env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+  const model = env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   if (!/^[a-z0-9.-]+$/.test(model)) throw new Error("not_configured");
   const response = await send(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -60,7 +60,13 @@ export async function generateAnswer(
     },
   );
   if (!response.ok)
-    throw new Error(response.status === 429 ? "limited" : "ai_unavailable");
+    throw new Error(
+      response.status === 429
+        ? "limited"
+        : [400, 401, 403, 404].includes(response.status)
+          ? "ai_credentials"
+          : "ai_unavailable",
+    );
   const data = await response.json();
   const text = data.candidates?.[0]?.content?.parts
     ?.filter((p: any) => !p.thought && typeof p.text === "string")

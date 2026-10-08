@@ -17,7 +17,10 @@ export function AccountPreferences() {
       const r = await fetch("/api/admin/email-deliveries", {
         credentials: "include",
       });
-      if (!r.ok) throw Error();
+      if (!r.ok) {
+        const value = await r.json().catch(() => ({}));
+        throw Error(value.code || "failed");
+      }
       return r.json();
     },
     refetchInterval: 10000,
@@ -49,7 +52,10 @@ export function AccountPreferences() {
       signal: c.signal,
     })
       .then(async (r) => {
-        if (!r.ok) throw Error();
+        if (!r.ok) {
+          const value = await r.json().catch(() => ({}));
+          throw Error(value.code || "failed");
+        }
         return r.json();
       })
       .then((v) => {
@@ -79,7 +85,10 @@ export function AccountPreferences() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emailUpdates: value }),
       });
-      if (!r.ok) throw Error();
+      if (!r.ok) {
+        const value = await r.json().catch(() => ({}));
+        throw Error(value.code || "failed");
+      }
       setEmail(value);
     } catch {
       setError(true);
@@ -153,7 +162,20 @@ export function AccountPreferences() {
           {delivery.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : delivery.isError ? (
-            <p role="alert">{t("p4.failed")}</p>
+            <div role="alert">
+              <p>
+                {t(
+                  "finalPolish." +
+                    ((delivery.error as Error)?.message ===
+                    "schema_update_required"
+                      ? "schema_update_required"
+                      : "failed"),
+                )}
+              </p>
+              <button className="p4-control" onClick={() => delivery.refetch()}>
+                {t("finalPolish.connectionRetry")}
+              </button>
+            </div>
           ) : (
             <>
               <p>
@@ -161,6 +183,20 @@ export function AccountPreferences() {
                   delivery.data.configured ? "mailConfigured" : "mailMissing",
                 )}
               </p>
+              {!delivery.data.configured && (
+                <div className="service-setup">
+                  <p>{t("finalPolish.emailSetup")}</p>
+                  {delivery.data.missing?.length > 0 && (
+                    <p>
+                      {t("finalPolish.missing")}:{" "}
+                      <bdi>{delivery.data.missing.join(", ")}</bdi>
+                    </p>
+                  )}
+                  {delivery.data.invalidOrigin && (
+                    <p>{t("finalPolish.invalidOrigin")}</p>
+                  )}
+                </div>
+              )}
               <dl className="profile-summary">
                 {["pending", "failed", "sent"].map((key) => (
                   <div key={key}>
@@ -186,7 +222,10 @@ export function AccountPreferences() {
                         "/api/admin/email-deliveries/retry",
                         { method: "POST", credentials: "include" },
                       );
-                      if (!r.ok) throw Error();
+                      if (!r.ok) {
+                        const value = await r.json().catch(() => ({}));
+                        throw Error(value.code || "failed");
+                      }
                       setRetryEmpty((await r.json()).count === 0);
                       await delivery.refetch();
                     } catch {
