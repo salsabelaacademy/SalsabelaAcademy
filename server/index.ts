@@ -1,3 +1,4 @@
+import {startEmailWorker} from "./email-delivery";
 import { startPushWorker } from "./push";
 import { validateEnvironment } from "./environment";
 import { pool } from "./db";
@@ -72,7 +73,8 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
       const stopIntegrationWorker = startWorker();
       const stopPush = startPushWorker();
-      const stopWorker = () => { stopIntegrationWorker(); stopPush(); };
+      const stopEmail = startEmailWorker();
+      const stopWorker = () => { stopIntegrationWorker(); stopPush(); stopEmail(); };
       httpServer.once("close", stopWorker);
       for(const signal of ["SIGTERM","SIGINT"] as const) process.once(signal,()=>{stopWorker();httpServer.close(()=>{void pool.end().then(()=>process.exit(0));});setTimeout(()=>process.exit(1),15000).unref();});
     },

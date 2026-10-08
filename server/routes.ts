@@ -1,3 +1,4 @@
+import {authEmail} from "./email-template";
 import { isSupportedCountry, validateCountryPhone } from '../shared/phone';
 import {resolvePublicCourse,publicCourses} from './public-courses';
 import { registerPortalRoutes } from "./portal";
@@ -48,8 +49,8 @@ async function sendAuthLink(to: string, subject: string, path: string, token: st
     if (process.env.NODE_ENV === "production") throw new Error("RESEND_API_KEY and RESEND_FROM are required in production");
     return false;
   }
-  const result = await new Resend(process.env.RESEND_API_KEY).emails.send({ from: process.env.RESEND_FROM, to, subject, html: `<p><a rel="noopener noreferrer" target="_blank" href="${path}?token=${encodeURIComponent(token)}">Continue securely</a></p>` });
-  if (result.error) throw new Error("Email delivery failed");
+  const result = await new Resend(process.env.RESEND_API_KEY).emails.send({ from: process.env.RESEND_FROM, to, ...authEmail(path,token,new URL(path).origin) });
+  if (result.error || !result.data?.id) throw new Error("Email delivery failed");
   return true;
 }
 

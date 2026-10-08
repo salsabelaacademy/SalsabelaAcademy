@@ -9,7 +9,7 @@ import { useCourses } from '@/hooks/use-courses';
 import { DashboardShell, DashboardOverview } from "@/components/DashboardLayout";
 import { BrandLoading, ContentTransition } from "@/components/BrandLoading";
 import { useEffect, useState, lazy, Suspense, type FormEvent } from "react";
-const ConversationWorkspace=lazy(()=>import('@/components/ConversationWorkspace').then(m=>({default:m.ConversationWorkspace})));
+import { AccountPreferences } from "@/components/AccountPreferences";
 const DashboardProfile = lazy(() => import('@/components/DashboardProfile').then(module => ({default: module.DashboardProfile})));
 const TestimonialManager = lazy(() => import('@/components/TestimonialManager').then(module => ({default: module.TestimonialManager})));
 const AdminArticles = lazy(() => import('./Admin'));
@@ -139,8 +139,8 @@ function ActionForm({
     </form>
   );
 }
-const adminDashboardSections = ["overview","applications","students","lessons","attendance","messages","notifications","contactInbox","audit","profile","settings"];
-const studentDashboardSections = ["overview","lessons","programs","attendance","messages","notifications","profile","settings"];
+const adminDashboardSections = ["overview","applications","students","lessons","attendance","notifications","contactInbox","audit","profile","settings"];
+const studentDashboardSections = ["overview","lessons","programs","attendance","notifications","profile","settings"];
 const dashboardSections = Array.from(new Set([...adminDashboardSections, ...studentDashboardSections]));
 export default function Dashboard() {
   const { t } = useTranslation(),
@@ -215,7 +215,7 @@ export default function Dashboard() {
         navigate("/login");
         return;
       }
-      setNotice(d.emailDelivery === false ? "emailUnavailable" : "saved");
+      if(!path.startsWith("/notifications/"))setNotice(d.emailDelivery === false ? "emailUnavailable" : "saved");
       reload();
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "failed");
@@ -551,7 +551,7 @@ export default function Dashboard() {
               )}</DashboardRecords>              {!data.attendance.length && <p>{tr("empty")}</p>}
             </>
           )}
-          {tab === "messages" && <ConversationWorkspace/>}
+
           {tab === "notifications" && <NotificationCenter items={data.notifications} date={date} onDone={reload}/>}
           {tab === "contactInbox" && admin && (
             <>
@@ -577,8 +577,8 @@ export default function Dashboard() {
           )}
           {tab === "settings" && (
             <>
-              <div className="dash-page-heading"><h2>{tr("settings")}</h2><p>{t('refinement.settingsHint')}</p></div>
-              {admin && <TestimonialManager />}
+              <div className="dash-page-heading"><h2>{tr("settings")}</h2><p>{t('refinement.settingsHint')}</p></div><AccountPreferences />
+              {admin && <details className="settings-details"><summary>{t("homeContent.manage")}</summary><TestimonialManager /></details>}
               <section className="p4-card">
                 {admin ? (
                   <>
@@ -604,13 +604,13 @@ export default function Dashboard() {
                   <button className="p4-button" onClick={() => setTab("profile")}>{tr("profile")}</button>
                 )}
               </section>
-              <Link className="p4-text-link" href="/account/password">
+              <section className="dash-panel settings-security"><h2>{tr("accountSecurity")}</h2><Link className="p4-text-link" href="/account/password">
                 {tr("password")}
               </Link>
               <h3>{tr("sessions")}</h3>
               {data.sessions.map((s: any) => (
                 <article className="p4-card p4-row" key={s.id}>
-                  <time>{date(s.created_at)}</time>
+                  <div><time>{date(s.created_at)}</time>{s.current&&<span className="session-current">{t("preferences.currentSession")}</span>}</div>
                   <button
                     disabled={busy}
                     className="p4-button"
@@ -632,7 +632,7 @@ export default function Dashboard() {
                 }}
               >
                 {tr("logoutAll")}
-              </button>
+              </button></section>
             </>
           )}
         </div></Suspense></ContentTransition>

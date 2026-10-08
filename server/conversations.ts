@@ -48,7 +48,7 @@ export function registerConversations(app: Express) {
     run(async (req, res) => {
       const actor = (req as any).auth.user;
       const result = await pool.query(
-        `SELECT u.id,u.name,u.avatar_url AS "avatarUrl",(SELECT count(*)::int FROM messages m WHERE m.sender_id=u.id AND m.recipient_id=$1 AND m.read_at IS NULL) AS unread FROM users u WHERE u.role=$2 AND u.status='active' ORDER BY u.name,u.id`,
+        `SELECT u.id,u.name,u.role,u.avatar_url AS "avatarUrl",(SELECT count(*)::int FROM messages m WHERE m.sender_id=u.id AND m.recipient_id=$1 AND m.read_at IS NULL) AS unread FROM users u WHERE u.role=$2 AND u.status='active' ORDER BY u.name,u.id`,
         [actor.id, actor.role === "admin" ? "student" : "admin"],
       );
       res.set("Cache-Control", "no-store").json(result.rows);

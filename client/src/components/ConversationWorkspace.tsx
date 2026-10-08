@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-type Person = { id: number; name: string; avatarUrl?: string; unread: number };
+type Person = { id: number; name: string; role?: string; avatarUrl?: string; unread: number };
 type Message = {
   id: number;
   sender_id: number;
@@ -20,14 +20,14 @@ type Message = {
   created_at: string;
 };
 
-export function ConversationWorkspace() {
+export function ConversationWorkspace({ initialAI=false,focusId,onBack }: {initialAI?:boolean;focusId?:number;onBack?:()=>void} = {}) {
   const { user } = useAuth(),
     { t, i18n } = useTranslation(),
     tr = (k: string) => t("dashboardUpdate." + k),
     client = useQueryClient();
   const [selected, setSelected] = useState<number | null>(null),
     [search, setSearch] = useState(""),
-    [ai, setAi] = useState(false),
+    [ai, setAi] = useState(initialAI),
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -70,7 +70,7 @@ export function ConversationWorkspace() {
   const other = people.data?.find((p) => p.id === selected);
   useEffect(() => {
     if (
-      user?.role === "student" &&
+      !initialAI && user?.role === "student" &&
       people.data?.length === 1 &&
       !autoSelected.current
     ) {
@@ -91,11 +91,11 @@ export function ConversationWorkspace() {
   }, [chat.data?.messages.at(-1)?.id, answers.length]);
   useEffect(() => {
     const target = new URLSearchParams(location.search).get("focus");
-    if (target?.startsWith("message:")) {
+    if (focusId || target?.startsWith("message:")) {
       void conversationApi("/messages")
         .then((items: any[]) => {
           const message = items.find(
-            (m) => m.id === Number(target.split(":")[1]),
+            (m) => m.id === (focusId || Number(target?.split(":")[1])),
           );
           if (message)
             setSelected(
@@ -106,7 +106,7 @@ export function ConversationWorkspace() {
         })
         .catch(() => {});
     }
-  }, [user?.id]);
+  }, [user?.id,focusId]);
   const choose = (id: number) => {
     setSelected(id);
     setAi(false);
@@ -220,7 +220,7 @@ export function ConversationWorkspace() {
                   onClick={() => choose(person.id)}
                 >
                   <img
-                    src={person.avatarUrl || "/default-male-avatar.svg"}
+                    src={person.avatarUrl || (person.role === "admin" ? "/logo-icon.png" : "/default-male-avatar.svg")}
                     width={42}
                     height={42}
                     alt=""
@@ -250,6 +250,7 @@ export function ConversationWorkspace() {
               <button
                 className="conversation-back"
                 onClick={() => {
+                  if(onBack){onBack();return;}
                   setSelected(null);
                   setAi(false);
                 }}
@@ -261,7 +262,7 @@ export function ConversationWorkspace() {
                 <Sparkles size={24} aria-hidden />
               ) : (
                 <img
-                  src={other?.avatarUrl || "/default-male-avatar.svg"}
+                  src={other?.avatarUrl || (other?.role === "admin" ? "/logo-icon.png" : "/default-male-avatar.svg")}
                   width={42}
                   height={42}
                   alt=""

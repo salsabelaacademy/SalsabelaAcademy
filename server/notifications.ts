@@ -1,3 +1,4 @@
+import {brandedEmail} from "./email-template";
 import { Resend } from "resend";
 
 export function notificationStatus(env = process.env) {
@@ -16,7 +17,7 @@ export async function sendNotificationTest(to: string, env = process.env, sender
   const result = await send({
     from: env.RESEND_FROM!, to,
     subject: "Salsabela Academy — Email test / اختبار البريد",
-    html: "<p>Salsabela Academy email delivery test.</p><p>رسالة اختبار لإرسال البريد من أكاديمية سلسبيلا.</p>",
+    ...brandedEmail({title:"Email test / اختبار البريد",body:"Salsabela Academy email delivery test.\nرسالة اختبار لإرسال البريد من أكاديمية سلسبيلا.",url:(env.FRONTEND_URL||"https://salsabela.com")+"/dashboard/admin"},env.FRONTEND_URL||"https://salsabela.com"),
   });
   if (result.error || !result.data?.id) throw new Error("email_delivery_failed");
   return { sent: true };

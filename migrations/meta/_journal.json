@@ -78,6 +78,13 @@
       "when": 1791500000000,
       "tag": "0010_dashboard_communication",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791501000000,
+      "tag": "0011_email_preferences",
+      "breakpoints": true
     }
   ]
 }

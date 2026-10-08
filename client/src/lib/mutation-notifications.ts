@@ -15,7 +15,7 @@ export function installMutationNotifications() {
       url.origin !== location.origin ||
       !url.pathname.startsWith("/api/") ||
       !["POST", "PUT", "PATCH", "DELETE"].includes(method) ||
-      /\/(?:assistant|push)\/|\/conversations\/\d+\/read$|\/auth\/(?:me|logout)$/.test(
+      /\/(?:assistant|push|auth)\/|\/integrations\/|\/admin\/notifications\/test$|\/conversations\/\d+\/read$|\/notifications\/(?:\d+\/read|read-all)$/.test(
         url.pathname,
       )
     )
@@ -25,6 +25,18 @@ export function installMutationNotifications() {
       .json()
       .catch(() => ({}));
     if (response.ok) {
+      if (
+        url.pathname === "/api/admin/email-deliveries/retry" &&
+        value.count === 0
+      )
+        return response;
+      window.dispatchEvent(new Event("academy:data-changed"));
+      if (
+        !/^\/api\/(?:portal\/|admin\/(?:lesson-series|email-deliveries\/retry|lessons|applications|students|enrollments)|conversations\/|lessons\/|posts(?:\/|$)|notifications\/)/.test(
+          url.pathname,
+        )
+      )
+        return response;
       const key = value.url
         ? "opened"
         : value.queued

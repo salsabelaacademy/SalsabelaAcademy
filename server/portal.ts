@@ -1,3 +1,4 @@
+import {registerAccountPreferences} from "./account-preferences";
 import {registerConversations} from './conversations';
 import {registerRecurringLessons} from './recurring-lessons';
 import { dateOfBirth } from '../shared/account-details';
@@ -58,6 +59,7 @@ export function registerPortalRoutes(app: Express) {
   });
   registerLessonFollowups(app);
   app.patch('/api/notifications/read-all',requireAuth(['admin','student']),run(async(req,res)=>{await pool.query('UPDATE notifications SET read_at=now() WHERE user_id=$1 AND read_at IS NULL',[(req as any).auth.user.id]);res.json({ok:true});}));
+  registerAccountPreferences(app);
   registerConversations(app);
   registerRecurringLessons(app);
   registerDashboardSearch(app);
@@ -231,8 +233,8 @@ export function registerPortalRoutes(app: Express) {
           "SELECT id,name,slug FROM programs WHERE is_public=true",
         ),
         rows(
-          "SELECT id,created_at,expires_at FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now()",
-          [u.id],
+          "SELECT id,created_at,expires_at,(token_hash=$2) AS current FROM auth_sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now() ORDER BY created_at DESC",
+          [u.id,tokenHash((req as any).auth.token)],
         ),
         admin ? Promise.resolve([]) : rows('SELECT id,student_id,appointment_type,starts_at,ends_at,status FROM appointments WHERE student_id=$1 ORDER BY starts_at',[u.id]),
       ]);
