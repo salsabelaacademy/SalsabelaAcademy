@@ -1,3 +1,4 @@
+import {registerServiceDiagnostics} from "./service-diagnostics";
 import {serviceError} from "./service-errors";
 import {registerAccountPreferences} from "./account-preferences";
 import {registerConversations} from './conversations';
@@ -52,6 +53,7 @@ export const publicLimit: RequestHandler = run(async (req, res, next) => {
   next();
 });
 export function registerPortalRoutes(app: Express) {
+  registerServiceDiagnostics(app);
   app.use('/api', (req,res,next)=>{
     if (/^\/(?:student\/drive-materials|materials|progress|admin\/(?:curriculum|materials|progress|integrations\/drive)|portal\/(?:modules|units|assign|materials|progress|curriculum))(?:\/|$)/.test(req.path)) {
       return requireAuth(req.path.startsWith('/admin/')||req.path.startsWith('/portal/')?['admin']:['student'])(req,res,()=>res.status(410).json({code:'feature_disabled'}));

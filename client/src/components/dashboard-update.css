@@ -1892,9 +1892,235 @@
     animation: none !important;
   }
 }
-.profile-studio.dash-profile-page {align-items:stretch;width:100%}
-.profile-studio-hero {width:100%}
-.profile-studio .dash-profile-portrait {border-radius:50%}
-.profile-form-heading {display:block}
-.profile-health progress {position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden}
-.account-avatar-placeholder {width:55%;height:55%}
+.profile-studio.dash-profile-page {
+  align-items: stretch;
+  width: 100%;
+}
+.profile-studio-hero {
+  width: 100%;
+}
+.profile-studio .dash-profile-portrait {
+  border-radius: 50%;
+}
+.profile-form-heading {
+  display: block;
+}
+.profile-health progress {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+.account-avatar-placeholder {
+  width: 55%;
+  height: 55%;
+}
+/* Neutral navy surfaces: notifications and messenger share the dashboard theme. */
+.dash-root,
+.notification-center,
+.academy-messenger {
+  --workspace-surface: #fff;
+  --workspace-border: #dfe5ed;
+  --workspace-soft: #f3f5f9;
+  --workspace-muted: #596b80;
+  --workspace-accent: #284763;
+  --workspace-ink: #152d43;
+  --workspace-action: #203e58;
+}
+.dark .dash-root,
+.dark .notification-center,
+.dark .academy-messenger {
+  --workspace-surface: #182536;
+  --workspace-border: #304155;
+  --workspace-soft: #213146;
+  --workspace-muted: #adbdcf;
+  --workspace-accent: #dbc089;
+  --workspace-ink: #edf3fa;
+  --workspace-action: #385572;
+}
+.notification-center,
+.academy-messenger,
+.conversation-workspace {
+  background: var(--workspace-surface);
+  color: var(--workspace-ink);
+}
+.academy-messenger {
+  border-color: var(--workspace-border);
+  border-radius: 22px;
+  box-shadow: 0 18px 65px #08152538;
+}
+.messenger-brand,
+.messenger-brand-home {
+  background: linear-gradient(135deg, #213e59, #142a41);
+}
+.messenger-brand p {
+  color: #c8d5e4;
+}
+.messenger-brand-home {
+  padding: 24px 24px 40px;
+}
+.messenger-brand-home h2 {
+  font-size: 26px;
+  margin-top: 24px;
+}
+.messenger-home-card {
+  background: var(--workspace-surface);
+  color: var(--workspace-ink);
+  border-color: var(--workspace-border);
+  box-shadow: 0 4px 16px #0714210c;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.messenger-home-card:hover {
+  background: var(--workspace-soft);
+  border-color: #b99a56;
+}
+.messenger-home-card > svg {
+  color: var(--workspace-accent);
+}
+.messenger-home-card small,
+.messenger-home-note,
+.messenger-tabs button {
+  color: var(--workspace-muted);
+}
+.messenger-tabs {
+  border-color: var(--workspace-border);
+  background: var(--workspace-surface);
+  padding-block: 6px;
+}
+.messenger-tabs button[aria-current="page"],
+.dark .messenger-tabs button[aria-current="page"] {
+  color: var(--workspace-accent);
+  background: var(--workspace-soft);
+  border-radius: 12px;
+}
+.conversation-ai,
+.conversation-unread,
+.chat-own,
+.conversation-compose > .p4-button {
+  background: var(--workspace-action);
+  color: #fff;
+}
+.chat-other {
+  background: var(--workspace-soft);
+  color: var(--workspace-ink);
+  border-color: var(--workspace-border);
+}
+.conversation-log {
+  background: var(--workspace-surface);
+}
+.conversation-compose textarea {
+  background: var(--workspace-soft);
+  color: var(--workspace-ink);
+  border-color: var(--workspace-border);
+}
+.academy-messenger .conversation-ai {
+  background: var(--workspace-action);
+  color: #fff;
+  border: 1px solid var(--workspace-border);
+  border-radius: 10px;
+}
+.dashboard-chat-launcher {
+  background: #203e58 !important;
+}
+.dash-root .notification-center .p4-button,
+.dark .dash-root .notification-center .p4-button,
+.dash-root .academy-messenger .p4-button,
+.dark .dash-root .academy-messenger .p4-button {
+  background: var(--workspace-action);
+  color: #fff;
+}
+.service-error-notice {
+  border: 1px solid var(--workspace-border);
+  border-inline-start: 3px solid #ba9451;
+  background: var(--workspace-soft);
+  color: var(--workspace-ink);
+  border-radius: 12px;
+  padding: 14px;
+  line-height: 1.8;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.service-error-heading {
+  display: flex;
+  align-items: start;
+  gap: 9px;
+}
+.service-error-heading svg {
+  flex: none;
+  margin-top: 4px;
+  color: var(--workspace-accent);
+}
+.service-error-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.service-error-actions button,
+.service-diagnostic button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 8px;
+}
+.service-diagnostic {
+  border-top: 1px solid var(--workspace-border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.service-diagnostic dl {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+.service-diagnostic dl > div {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.service-diagnostic dd {
+  font-weight: 600;
+}
+.account-avatar-placeholder {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: linear-gradient(145deg, #f6f0e3, #e4d7b8);
+  color: #203e58;
+  overflow: hidden;
+}
+.account-avatar-placeholder > svg {
+  width: 57%;
+  height: 57%;
+  stroke-width: 1.6;
+}
+.account-avatar-placeholder > i {
+  position: absolute;
+  inset-inline-end: 12%;
+  bottom: 12%;
+  width: 9%;
+  height: 9%;
+  background: #b99a56;
+  border-radius: 50%;
+}
+.dark .account-avatar-placeholder {
+  background: linear-gradient(145deg, #31485f, #22364b);
+  color: #e7d7b5;
+}
+.review-person img {
+  border-radius: 50%;
+  background: #f4ecdc;
+  padding: 3px;
+  border: 1px solid #d6be8b;
+}

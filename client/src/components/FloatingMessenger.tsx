@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { conversationApi } from "@/lib/dashboard-api";
+import { conversationApi, conversationPeople } from "@/lib/dashboard-api";
 const Workspace = lazy(() =>
   import("./ConversationWorkspace").then((m) => ({
     default: m.ConversationWorkspace,
@@ -42,11 +42,14 @@ export function FloatingMessenger({
   }, []);
   const people = useQuery<any[]>({
     queryKey: ["conversations", user?.id],
-    queryFn: () => conversationApi("/conversations"),
+    queryFn: conversationPeople,
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
   });
-  const count = (people.data || []).reduce((sum, p) => sum + p.unread, 0);
+  const count = (Array.isArray(people.data) ? people.data : []).reduce(
+    (sum, p) => sum + p.unread,
+    0,
+  );
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange} modal={false}>
       <Dialog.Trigger asChild>

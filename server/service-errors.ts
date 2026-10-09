@@ -10,5 +10,13 @@ export function serviceError(error: unknown, res: Response): boolean {
     res.status(503).json({ code: "schema_update_required" });
     return true;
   }
+  if (
+    ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "57P01", "53300"].includes(
+      (error as { code?: string })?.code || "",
+    )
+  ) {
+    res.status(503).json({ code: "database_unavailable" });
+    return true;
+  }
   return false;
 }

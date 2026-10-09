@@ -89,38 +89,3 @@ npm run db:migrate:single-report
 المقاسات المختبرة: 320، 375، 390، 768، 1024، 1440 بكسل، مع العربية RTL والإنجليزية والوضعين. بيانات الاختبارات ولقطات الشاشة معزولة ولا تُضاف إلى قاعدة الأكاديمية. لم تُستخدم مفاتيح إنتاج ولم يُرسل بريد حقيقي.
 
 أمر البناء يتعامل الآن مع أخطاء حذف مجلد مخرجات مؤقتًا بإعادة محاولات محدودة. لا يغيّر ملفات المصدر أو قاعدة البيانات.
-
-## نقاط الحفظ
-
-البداية: ded5f72؛ النهاية: 0a3713e.
-
-## الملفات المعدلة
-
-- client/public/review-avatar.svg
-- client/src/App.tsx
-- client/src/components/AccountAvatar.tsx
-- client/src/components/AccountPreferences.tsx
-- client/src/components/ConversationWorkspace.tsx
-- client/src/components/FloatingMessenger.tsx
-- client/src/components/HomeContent.tsx
-- client/src/components/LessonFollowup.tsx
-- client/src/components/ServiceErrorNotice.tsx
-- client/src/components/WhatsAppButton.tsx
-- client/src/components/dashboard-update.css
-- client/src/components/integration-shared.tsx
-- client/src/lib/dashboard-api.ts
-- client/src/lib/final-polish-translations.ts
-- client/src/lib/integration-translations.ts
-- client/src/pages/Integrations.tsx
-- docs/report-completion-and-service-diagnostics-ar.md
-- script/build.ts
-- server/email-delivery.ts
-- server/email-errors.ts
-- server/http.ts
-- server/index.ts
-- server/lesson-followup.ts
-- server/notifications.ts
-- server/portal.ts
-- server/routes.ts
-- server/service-diagnostics.ts
-- server/service-errors.ts

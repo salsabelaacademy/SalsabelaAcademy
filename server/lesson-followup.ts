@@ -119,6 +119,13 @@ export function registerLessonFollowups(app: Express) {
           await c.query("ROLLBACK");
           return res.status(409).json({ code: "reportFuture" });
         }
+        if (body.kind === "report") {
+          // Completion and report commit together; attendance is recorded separately.
+          await c.query(
+            "UPDATE lessons SET status='completed',updated_at=now() WHERE id=$1 AND status<>'completed'",
+            [lessonId],
+          );
+        }
         if (
           body.kind === "issue" &&
           body.issueKind === "reminder" &&

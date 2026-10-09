@@ -1,3 +1,5 @@
+import {ServiceErrorNotice} from "@/components/ServiceErrorNotice";
+import {serviceErrorCodes} from "@/lib/dashboard-api";
 import { programLabel } from '@/lib/program-label';
 import { useCourses } from '@/hooks/use-courses';
 import { api, Panel, type Row } from "@/components/integration-shared";
@@ -56,7 +58,7 @@ export default function Integrations() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4"><Link href="/dashboard/admin" className="underline">{tr("back")}</Link><DisplayControls /><Button disabled={busy} onClick={() => run(reload)}>{tr("refresh")}</Button></header>
       <div><h1 className="text-3xl font-bold">{tr("title")}</h1><p className="mt-2 text-slate-600 dark:text-slate-300">{tr("subtitle")}</p></div>
-      {error && <p role="alert" className="rounded-lg border border-red-400 p-4 text-red-700 dark:text-red-300">{errorText(error)}</p>}
+      {error && ((serviceErrorCodes as readonly string[]).includes(error) ? <ServiceErrorNotice error={new Error(error)} retry={() => void run(reload)} /> : <p role="alert" className="rounded-lg border border-red-400 p-4 text-red-700 dark:text-red-300">{errorText(error)}</p>)}
       {notice && <p role="status" className="rounded-lg bg-blue-50 p-4 text-blue-950 dark:bg-blue-950 dark:text-blue-100">{tr(notice)}</p>}
       <div className="grid gap-4 md:grid-cols-2">{connections.map(c => <Panel key={c.provider} title={tr(c.provider)}>
         <p className="font-semibold">{tr(c.status)}</p><p className="text-sm">{tr("lastSuccess")}: {date(c.lastSuccess)}</p>

@@ -34,7 +34,7 @@ const allowlist = [
 ];
 
 async function buildAll() {
-  await rm("dist", { recursive: true, force: true });
+  await rm("dist", { recursive: true, force: true, maxRetries: 3, retryDelay: 150 });
 
   console.log("building client...");
   await viteBuild();

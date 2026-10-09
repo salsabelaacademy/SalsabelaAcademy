@@ -1,3 +1,4 @@
+import { emailErrorCode, emailErrorCodes } from "./email-errors";
 import { Resend } from "resend";
 import { pool } from "./db";
 import { brandedEmail } from "./email-template";
@@ -5,7 +6,9 @@ export function emailReady(env = process.env) {
   try {
     const u = new URL(env.FRONTEND_URL || "");
     return Boolean(
-      env.RESEND_API_KEY?.trim() && env.RESEND_FROM?.trim() && u.protocol === "https:",
+      env.RESEND_API_KEY?.trim() &&
+      env.RESEND_FROM?.trim() &&
+      u.protocol === "https:",
     );
   } catch {
     return false;
@@ -148,18 +151,23 @@ export async function processEmailJob(
       : await new Resend(process.env.RESEND_API_KEY).emails.send(payload, {
           idempotencyKey: key,
         });
-    if (sent.error || !sent.data?.id) throw Error("delivery_failed");
+    if (sent.error || !sent.data?.id) throw Error(emailErrorCode(sent.error));
     await pool.query(
       "UPDATE email_deliveries SET status='sent',last_error=NULL WHERE id=$1",
       [job.id],
     );
-  } catch {
+  } catch (error) {
+    const code =
+      error instanceof Error &&
+      (emailErrorCodes as readonly string[]).includes(error.message)
+        ? error.message
+        : "email_delivery_failed";
     await pool.query(
-      "UPDATE email_deliveries SET status=CASE WHEN attempts>=5 THEN 'failed' ELSE 'pending' END,next_attempt=now()+interval '1 minute'*power(2,attempts),last_error='delivery_failed' WHERE id=$1",
-      [job.id],
+      "UPDATE email_deliveries SET status=CASE WHEN attempts>=5 THEN 'failed' ELSE 'pending' END,next_attempt=now()+interval '1 minute'*power(2,attempts),last_error=$2 WHERE id=$1",
+      [job.id, code],
     );
     console.warn(
-      JSON.stringify({ event: "email_delivery_failed", jobId: job.id }),
+      JSON.stringify({ event: "email_delivery_failed", jobId: job.id, code }),
     );
   }
   return true;

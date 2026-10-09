@@ -11,6 +11,7 @@ import { LanguageProvider } from "@/hooks/use-language";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
+const WhatsAppButton = lazy(() => import("@/components/WhatsAppButton").then(m => ({default:m.WhatsAppButton})));
 const Articles = lazy(() => import("@/pages/Blog"));
 const Article = lazy(() => import("@/pages/BlogPost"));
 const Home = lazy(() => import('@/pages/Home'));
@@ -54,7 +55,7 @@ function Router() {
 
   return (
     <>
-      <ScrollToTop /><Seo /><BackgroundPriority />
+      <ScrollToTop /><Seo /><BackgroundPriority />{!/^\/(?:admin|dashboard|account)(?:\/|$)/.test(location)&&<Suspense fallback={null}><WhatsAppButton/></Suspense>}
 
         <PageBoundary key={/^\/(admin|dashboard)(\/|$)/.test(location) ? 'workspace' : location}><Suspense fallback={<RouteLoading/>}><PageMotion><Switch>
           <Route path="/">

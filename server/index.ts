@@ -1,8 +1,8 @@
-import {startEmailWorker} from "./email-delivery";
+import { startEmailWorker } from "./email-delivery";
 import { startPushWorker } from "./push";
 import { validateEnvironment } from "./environment";
 import { pool } from "./db";
-import {configureHttp} from "./http";
+import { configureHttp } from "./http";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -15,7 +15,9 @@ configureHttp(app);
 const httpServer = createServer(app);
 
 export function log(message: string, source = "express") {
-  console.log(JSON.stringify({ time:new Date().toISOString(), source, message }));
+  console.log(
+    JSON.stringify({ time: new Date().toISOString(), source, message }),
+  );
 }
 
 app.use((req, res, next) => {
@@ -25,7 +27,15 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      log(JSON.stringify({method:req.method, route:req.route?.path || "api", status:res.statusCode, durationMs:duration}));
+      log(
+        JSON.stringify({
+          method: req.method,
+          route: req.route?.path || "api",
+          status: res.statusCode,
+          durationMs: duration,
+          requestId: res.locals.requestId,
+        }),
+      );
     }
   });
 
@@ -46,10 +56,29 @@ app.use((req, res, next) => {
   }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-    const status = err.name === "ZodError" ? 400 : err.status || err.statusCode || 500;
-    const message = status >= 500 ? "Internal Server Error" : err.message || "Request failed";
+    const status =
+      err.name === "ZodError" ? 400 : err.status || err.statusCode || 500;
+    const message =
+      status >= 500 ? "Internal Server Error" : err.message || "Request failed";
 
-    console.error(JSON.stringify({event:"request_failed",status}));
+    console.error(
+      JSON.stringify({
+        event: "request_failed",
+        status,
+        requestId: res.locals.requestId,
+        code: [
+          "ECONNREFUSED",
+          "ETIMEDOUT",
+          "ENOTFOUND",
+          "42P01",
+          "42703",
+          "57P01",
+          "53300",
+        ].includes(err.code)
+          ? err.code
+          : "unclassified",
+      }),
+    );
 
     if (res.headersSent) {
       return next(err);
@@ -74,9 +103,20 @@ app.use((req, res, next) => {
       const stopIntegrationWorker = startWorker();
       const stopPush = startPushWorker();
       const stopEmail = startEmailWorker();
-      const stopWorker = () => { stopIntegrationWorker(); stopPush(); stopEmail(); };
+      const stopWorker = () => {
+        stopIntegrationWorker();
+        stopPush();
+        stopEmail();
+      };
       httpServer.once("close", stopWorker);
-      for(const signal of ["SIGTERM","SIGINT"] as const) process.once(signal,()=>{stopWorker();httpServer.close(()=>{void pool.end().then(()=>process.exit(0));});setTimeout(()=>process.exit(1),15000).unref();});
+      for (const signal of ["SIGTERM", "SIGINT"] as const)
+        process.once(signal, () => {
+          stopWorker();
+          httpServer.close(() => {
+            void pool.end().then(() => process.exit(0));
+          });
+          setTimeout(() => process.exit(1), 15000).unref();
+        });
     },
   );
 })();

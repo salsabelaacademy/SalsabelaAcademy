@@ -266,7 +266,11 @@ export function LessonActions({
       setMode(null);
       onDone();
     } catch (e) {
-      if(e instanceof Error && e.message==='reportExists'){setSentLesson(lesson.id);setMode(null);onDone();}
+      if (e instanceof Error && e.message === "reportExists") {
+        setSentLesson(lesson.id);
+        setMode(null);
+        onDone();
+      }
       setMessage(e instanceof Error ? e.message : "failed");
     } finally {
       setBusy(false);
@@ -276,7 +280,7 @@ export function LessonActions({
   return (
     <>
       <div className="lesson-action-bar">
-        {lesson.status === "scheduled" && (
+        {lesson.status === "scheduled" && !reported && (
           <button type="button" onClick={() => open("reschedule")}>
             <CalendarClock aria-hidden size={18} />
             {tr("reschedule")}
@@ -286,19 +290,21 @@ export function LessonActions({
           <BellRing aria-hidden size={18} />
           {tr("issue")}
         </button>
-        <button
-          type="button"
-          onClick={() => open("report")}
-          disabled={!reportAllowed}
-          title={
-            !reportAllowed
-              ? tr(reported ? "reportExists" : "reportFuture")
-              : undefined
-          }
-        >
-          <ClipboardCheck aria-hidden size={18} />
-          {tr(reported ? "reportExists" : "report")}
-        </button>
+        {!reported && (
+          <button
+            type="button"
+            onClick={() => open("report")}
+            disabled={!reportAllowed}
+            title={
+              !reportAllowed
+                ? tr(reported ? "reportExists" : "reportFuture")
+                : undefined
+            }
+          >
+            <ClipboardCheck aria-hidden size={18} />
+            {tr("report")}
+          </button>
+        )}
       </div>
       <Sheet
         open={mode !== null}

@@ -1,3 +1,5 @@
+import { conversationApi } from "@/lib/dashboard-api";
+import { ServiceErrorNotice } from "./ServiceErrorNotice";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,14 +16,14 @@ export function AccountPreferences() {
     queryKey: ["email-deliveries", user?.id],
     enabled: user?.role === "admin",
     queryFn: async () => {
-      const r = await fetch("/api/admin/email-deliveries", {
-        credentials: "include",
-      });
-      if (!r.ok) {
-        const value = await r.json().catch(() => ({}));
-        throw Error(value.code || "failed");
-      }
-      return r.json();
+      const value = await conversationApi("/admin/email-deliveries");
+      if (
+        typeof value?.configured !== "boolean" ||
+        !value.counts ||
+        typeof value.counts !== "object"
+      )
+        throw Error("api_response_invalid");
+      return value;
     },
     refetchInterval: 10000,
     refetchIntervalInBackground: false,
@@ -29,7 +31,7 @@ export function AccountPreferences() {
   const [retryEmpty, setRetryEmpty] = useState(false);
   const [email, setEmail] = useState(true),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(false),
+    [error, setError] = useState<string>(""),
     [loaded, setLoaded] = useState(false);
   const [compact, setCompact] = useState(() => {
     try {
@@ -47,23 +49,17 @@ export function AccountPreferences() {
   });
   useEffect(() => {
     const c = new AbortController();
-    fetch("/api/portal/preferences", {
-      credentials: "include",
-      signal: c.signal,
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          const value = await r.json().catch(() => ({}));
-          throw Error(value.code || "failed");
-        }
-        return r.json();
-      })
+    conversationApi("/portal/preferences")
       .then((v) => {
+        if (c.signal.aborted) return;
+        if (typeof v?.emailUpdates !== "boolean")
+          throw Error("api_response_invalid");
         setEmail(v.emailUpdates);
         setLoaded(true);
       })
-      .catch(() => {
-        if (!c.signal.aborted) setError(true);
+      .catch((e) => {
+        if (!c.signal.aborted)
+          setError(e instanceof Error ? e.message : "service_unavailable");
       });
     return () => c.abort();
   }, [user?.id]);
@@ -77,21 +73,14 @@ export function AccountPreferences() {
   }, [compact, motion]);
   async function updateEmail(value: boolean) {
     setBusy(true);
-    setError(false);
+    setError("");
     try {
-      const r = await fetch("/api/portal/preferences", {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailUpdates: value }),
+      await conversationApi("/portal/preferences", "PATCH", {
+        emailUpdates: value,
       });
-      if (!r.ok) {
-        const value = await r.json().catch(() => ({}));
-        throw Error(value.code || "failed");
-      }
       setEmail(value);
-    } catch {
-      setError(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "service_unavailable");
     } finally {
       setBusy(false);
     }
@@ -152,7 +141,7 @@ export function AccountPreferences() {
             onChange={(e) => void updateEmail(e.target.checked)}
           />
         </label>
-        {error && <p role="alert">{t("p4.failed")}</p>}
+        {error && <ServiceErrorNotice error={new Error(error)} />}
         <p className="dash-muted">{tr("security")}</p>
       </section>
       <PushPreferences />
@@ -162,20 +151,10 @@ export function AccountPreferences() {
           {delivery.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : delivery.isError ? (
-            <div role="alert">
-              <p>
-                {t(
-                  "finalPolish." +
-                    ((delivery.error as Error)?.message ===
-                    "schema_update_required"
-                      ? "schema_update_required"
-                      : "failed"),
-                )}
-              </p>
-              <button className="p4-control" onClick={() => delivery.refetch()}>
-                {t("finalPolish.connectionRetry")}
-              </button>
-            </div>
+            <ServiceErrorNotice
+              error={delivery.error}
+              retry={() => void delivery.refetch()}
+            />
           ) : (
             <>
               <p>
@@ -218,18 +197,17 @@ export function AccountPreferences() {
                   onClick={async () => {
                     setBusy(true);
                     try {
-                      const r = await fetch(
-                        "/api/admin/email-deliveries/retry",
-                        { method: "POST", credentials: "include" },
+                      setError("");
+                      const value = await conversationApi(
+                        "/admin/email-deliveries/retry",
+                        "POST",
                       );
-                      if (!r.ok) {
-                        const value = await r.json().catch(() => ({}));
-                        throw Error(value.code || "failed");
-                      }
-                      setRetryEmpty((await r.json()).count === 0);
+                      setRetryEmpty(value.count === 0);
                       await delivery.refetch();
-                    } catch {
-                      setError(true);
+                    } catch (e) {
+                      setError(
+                        e instanceof Error ? e.message : "service_unavailable",
+                      );
                     } finally {
                       setBusy(false);
                     }

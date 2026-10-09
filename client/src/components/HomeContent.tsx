@@ -24,7 +24,7 @@ function StudentReviews({items}:{items:Testimonial[]}){
      {items.map(item=><div key={item.id} className="min-w-0 flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] ps-6"><figure className="student-review-card h-full rounded-2xl border border-white/15 bg-white/5 p-7 flex flex-col">
       <span aria-hidden="true" className="text-5xl leading-none text-amber-300 font-serif">“</span>
       <blockquote className="text-base leading-8 whitespace-pre-line break-words flex-1">{item.quote}</blockquote>
-      <figcaption className="review-person mt-7 pt-5 border-t border-white/15"><img src="/default-male-avatar.svg" alt={t('dashboardUpdate.defaultAvatar')} width={48} height={48} loading="lazy"/><div><p className="font-bold text-amber-200 break-words">{item.name}</p>{item.location&&<p className="text-sm text-slate-300 mt-1 break-words">{item.location}</p>}</div></figcaption>
+      <figcaption className="review-person mt-7 pt-5 border-t border-white/15"><img src="/review-avatar.svg" alt={t('dashboardUpdate.defaultAvatar')} width={48} height={48} loading="lazy"/><div><p className="font-bold text-amber-200 break-words">{item.name}</p>{item.location&&<p className="text-sm text-slate-300 mt-1 break-words">{item.location}</p>}</div></figcaption>
      </figure></div>)}
     </div></div>
     {canScroll&&<div className="flex flex-wrap justify-center gap-3 mt-7">

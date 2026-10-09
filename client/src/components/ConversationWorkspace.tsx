@@ -1,4 +1,6 @@
-import { conversationApi } from "@/lib/dashboard-api";
+import { AccountAvatar } from "./AccountAvatar";
+import { ServiceErrorNotice } from "./ServiceErrorNotice";
+import { conversationApi, conversationPeople } from "@/lib/dashboard-api";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -9,7 +11,6 @@ import {
   MessageCircle,
   Search,
   Trash2,
-  UserRound,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 type Person = {
@@ -52,14 +53,19 @@ export function ConversationWorkspace({
   >([]);
   const people = useQuery<Person[]>({
     queryKey: ["conversations", user?.id],
-    queryFn: () => conversationApi("/conversations"),
+    queryFn: conversationPeople,
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
   const chat = useQuery<{ messages: Message[]; hasMore: boolean }>({
     queryKey: ["conversation", user?.id, selected],
-    queryFn: () => conversationApi("/conversations/" + selected),
+    queryFn: async () => {
+      const value = await conversationApi("/conversations/" + selected);
+      if (!Array.isArray(value?.messages) || typeof value.hasMore !== "boolean")
+        throw Error("api_response_invalid");
+      return value;
+    },
     enabled: Boolean(selected) && !ai,
     refetchInterval: 3000,
     refetchIntervalInBackground: false,
@@ -67,7 +73,12 @@ export function ConversationWorkspace({
   });
   const config = useQuery<{ configured: boolean }>({
     queryKey: ["assistant-config", user?.id],
-    queryFn: () => conversationApi("/assistant/config"),
+    queryFn: async () => {
+      const value = await conversationApi("/assistant/config");
+      if (typeof value?.configured !== "boolean")
+        throw Error("api_response_invalid");
+      return value;
+    },
     enabled: ai,
     refetchInterval: 30000,
     refetchIntervalInBackground: false,
@@ -215,19 +226,10 @@ export function ConversationWorkspace({
           {people.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : people.isError ? (
-            <div role="alert">
-              <p>
-                {t(
-                  "finalPolish." +
-                    (["schema_update_required", "session_expired"].includes(
-                      (people.error as Error)?.message,
-                    )
-                      ? (people.error as Error).message
-                      : "failed"),
-                )}
-              </p>
-              <button onClick={() => people.refetch()}>{tr("retry")}</button>
-            </div>
+            <ServiceErrorNotice
+              error={people.error}
+              retry={() => void people.refetch()}
+            />
           ) : !people.data?.length ? (
             <p>{tr("noPeople")}</p>
           ) : (
@@ -252,7 +254,12 @@ export function ConversationWorkspace({
                     />
                   ) : (
                     <span className="conversation-avatar">
-                      <UserRound size={24} aria-hidden />
+                      <AccountAvatar
+                        user={{
+                          name: person.name,
+                          avatarUrl: person.avatarUrl || null,
+                        }}
+                      />
                     </span>
                   )}
                   <span>
@@ -302,7 +309,16 @@ export function ConversationWorkspace({
                 />
               ) : (
                 <span className="conversation-avatar">
-                  <UserRound size={24} aria-hidden />
+                  <AccountAvatar
+                    user={
+                      other
+                        ? {
+                            name: other.name,
+                            avatarUrl: other.avatarUrl || null,
+                          }
+                        : null
+                    }
+                  />
                 </span>
               )}
               <div>
@@ -332,12 +348,10 @@ export function ConversationWorkspace({
                     {config.isPending ? (
                       <p>{t("p4.loading")}</p>
                     ) : config.isError ? (
-                      <div role="alert">
-                        <p>{t("finalPolish.failed")}</p>
-                        <button onClick={() => config.refetch()}>
-                          {tr("retry")}
-                        </button>
-                      </div>
+                      <ServiceErrorNotice
+                        error={config.error}
+                        retry={() => void config.refetch()}
+                      />
                     ) : (
                       !config.data?.configured && (
                         <div>
@@ -364,17 +378,10 @@ export function ConversationWorkspace({
                   <>
                     {chat.isPending && <p>{t("p4.loading")}</p>}
                     {chat.isError && (
-                      <p role="alert">
-                        {t(
-                          "finalPolish." +
-                            ([
-                              "schema_update_required",
-                              "session_expired",
-                            ].includes((chat.error as Error)?.message)
-                              ? (chat.error as Error).message
-                              : "failed"),
-                        )}
-                      </p>
+                      <ServiceErrorNotice
+                        error={chat.error}
+                        retry={() => void chat.refetch()}
+                      />
                     )}
                     {chat.data?.hasMore && hasOlder && (
                       <button
@@ -410,25 +417,7 @@ export function ConversationWorkspace({
                 <div ref={bottom} />
               </div>
             </div>
-            {error && (
-              <p className="conversation-error" role="alert">
-                {[
-                  "schema_update_required",
-                  "session_expired",
-                  "ai_credentials",
-                ].includes(error)
-                  ? t("finalPolish." + error)
-                  : tr(
-                      error === "not_configured"
-                        ? "notConfigured"
-                        : error === "limited"
-                          ? "limited"
-                          : ai
-                            ? "aiUnavailable"
-                            : "failed",
-                    )}
-              </p>
-            )}
+            {error && <ServiceErrorNotice error={new Error(error)} ai={ai} />}
             <form className="conversation-compose" onSubmit={submit}>
               <textarea
                 aria-label={tr("message")}

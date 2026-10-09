@@ -1,3 +1,4 @@
+import {emailErrorCodes} from "./email-errors";
 import {authEmail} from "./email-template";
 import { isSupportedCountry, validateCountryPhone } from '../shared/phone';
 import {resolvePublicCourse,publicCourses} from './public-courses';
@@ -125,7 +126,7 @@ export async function registerRoutes(
       return res.json(await sendNotificationTest(current.email));
     } catch (error) {
       return res.status(error instanceof Error && error.message === "not_configured" ? 503 : 502)
-        .json({ code: error instanceof Error && error.message === "not_configured" ? "not_configured" : "email_delivery_failed" });
+        .json({ code: error instanceof Error && (error.message === "not_configured" || (emailErrorCodes as readonly string[]).includes(error.message)) ? error.message : "email_delivery_failed" });
     }
   });
 
