@@ -2127,7 +2127,7 @@
 /* Academy communication: one floating workspace, full-screen on phones. */
 .communication-overlay{position:fixed;inset:0;background:#07152538;backdrop-filter:blur(2px);z-index:110;animation:communication-fade .18s ease-out}
 .academy-messenger{z-index:111;inset-inline-end:24px;bottom:94px;width:420px;max-width:calc(100vw - 32px);height:min(740px,calc(100dvh - 120px));border-radius:24px;outline:none}
-.dashboard-chat-launcher{background:linear-gradient(145deg,#203e58,#102536);border:1px solid #b99957;box-shadow:0 8px 28px #10253630;z-index:109;width:58px;height:58px;transition:transform .18s ease,box-shadow .18s ease}
+.dashboard-chat-launcher{background:linear-gradient(145deg,#237158,#165447);border:1px solid #b99957;box-shadow:0 8px 28px #10253630;z-index:109;width:58px;height:58px;transition:transform .18s ease,box-shadow .18s ease}
 .dashboard-chat-launcher:hover{transform:translateY(-3px);box-shadow:0 12px 30px #10253640}
 .messenger-view{display:flex;flex:1;min-height:0;overflow:hidden;flex-direction:column;animation:communication-view .2s ease-out}
 .messenger-view-home{overflow:auto}
@@ -2197,7 +2197,12 @@
 @media(prefers-reduced-motion:reduce){.communication-overlay,.messenger-view,.academy-notification-inbox[data-state],.academy-account-menu{animation:none!important}.messenger-home-card,.dashboard-chat-launcher{transition:none}}
 .academy-reduced-motion .communication-overlay,.academy-reduced-motion .messenger-view,.academy-reduced-motion .academy-notification-inbox[data-state],.academy-reduced-motion .academy-account-menu{animation:none!important}
 .messenger-recent .conversation-avatar{flex:0 0 44px;width:44px;height:44px}.messenger-recent .messenger-preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.conversation-people strong,.conversation-people small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}.conversation-people button>span:not(.conversation-avatar){min-width:0;flex:1}.messenger-home-card:disabled,.conversation-people button:disabled{opacity:.65;cursor:wait}
-.dashboard-chat-launcher{background:linear-gradient(145deg,#203e58,#102536)!important}
+.dashboard-chat-launcher{background:linear-gradient(145deg,#237158,#165447)!important}
 .academy-notification-inbox .notification-center{padding:0}
 .academy-notification-inbox .notification-center-header{margin-bottom:0}
 .academy-notification-inbox .notification-tabs{margin-bottom:0}
+
+/* Keep the desktop workspace clear when communication windows are open. */
+@media(min-width:601px){
+ .communication-overlay{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+}
