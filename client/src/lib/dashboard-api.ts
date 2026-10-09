@@ -27,6 +27,7 @@ export async function conversationApi(
     r = await fetch("/api" + path, {
       method,
       credentials: "include",
+      cache: "no-store",
       signal: AbortSignal.timeout(
         path === "/assistant/chat" || path.startsWith("/admin/integrations")
           ? 30000

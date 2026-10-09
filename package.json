@@ -28,7 +28,8 @@
     "db:migrate:dashboard": "node --env-file-if-exists=.env --import tsx script/apply-dashboard-communication.ts",
     "db:migrate:email": "node --env-file-if-exists=.env --import tsx script/apply-email-preferences.ts",
     "db:migrate:single-report": "node --env-file-if-exists=.env --import tsx script/apply-single-report.ts",
-    "dashboard:diagnose": "node --env-file-if-exists=.env --import tsx script/check-dashboard.ts"
+    "dashboard:diagnose": "node --env-file-if-exists=.env --import tsx script/check-dashboard.ts",
+    "api:check": "node --import tsx script/check-runtime.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

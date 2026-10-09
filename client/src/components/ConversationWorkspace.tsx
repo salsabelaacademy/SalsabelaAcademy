@@ -33,8 +33,9 @@ type Message = {
 export function ConversationWorkspace({
   initialAI = false,
   focusId,
+  initialRecipientId,
   onBack,
-}: { initialAI?: boolean; focusId?: number; onBack?: () => void } = {}) {
+}: { initialAI?: boolean; focusId?: number; initialRecipientId?: number; onBack?: () => void } = {}) {
   const { user } = useAuth(),
     { t, i18n } = useTranslation(),
     tr = (k: string) => t("dashboardUpdate." + k),
@@ -44,12 +45,13 @@ export function ConversationWorkspace({
     [ai, setAi] = useState(initialAI),
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
+    [error, setError] = useState<Error | null>(null),
     [key, setKey] = useState(() => crypto.randomUUID()),
     [older, setOlder] = useState<Message[]>([]),
     [hasOlder, setHasOlder] = useState(true);
   const bottom = useRef<HTMLDivElement>(null),
     autoSelected = useRef(false);
+  const openedRecipient = useRef<number>();
   const [answers, setAnswers] = useState<
     { role: "user" | "model"; text: string }[]
   >([]);
@@ -92,6 +94,12 @@ export function ConversationWorkspace({
     ).values(),
   ).sort((a, b) => a.id - b.id);
   const other = people.data?.find((p) => p.id === selected);
+  useEffect(() => {
+    if (!initialAI && initialRecipientId && openedRecipient.current !== initialRecipientId && people.data?.some(p => p.id === initialRecipientId)) {
+      openedRecipient.current = initialRecipientId;
+      setSelected(initialRecipientId);
+    }
+  }, [initialAI, initialRecipientId, people.data]);
   useEffect(() => {
     if (
       !initialAI &&
@@ -137,7 +145,7 @@ export function ConversationWorkspace({
     setAi(false);
     setOlder([]);
     setHasOlder(true);
-    setError("");
+    setError(null);
     setText("");
     setKey(crypto.randomUUID());
   };
@@ -145,7 +153,7 @@ export function ConversationWorkspace({
     e.preventDefault();
     if (busy || !text.trim()) return;
     setBusy(true);
-    setError("");
+    setError(null);
     try {
       if (ai) {
         const input = [
@@ -156,12 +164,14 @@ export function ConversationWorkspace({
           language: i18n.language.startsWith("ar") ? "ar" : "en",
           messages: input,
         });
+        if (typeof result?.text !== "string" || !result.text.trim()) throw Error("api_response_invalid");
         setAnswers([...input, { role: "model", text: result.text }]);
       } else {
-        await conversationApi("/conversations/" + selected, "POST", {
+        const result = await conversationApi("/conversations/" + selected, "POST", {
           body: text.trim(),
           requestKey: key,
         });
+        if (!Number.isInteger(result?.id) || result.id <= 0) throw Error("api_response_invalid");
         await Promise.all([
           client.invalidateQueries({
             queryKey: ["conversation", user?.id, selected],
@@ -172,7 +182,7 @@ export function ConversationWorkspace({
       }
       setText("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "failed");
+      setError(e instanceof Error ? e : new Error("failed"));
     } finally {
       setBusy(false);
     }
@@ -186,8 +196,8 @@ export function ConversationWorkspace({
       );
       setOlder((previous) => [...result.messages, ...previous]);
       setHasOlder(result.hasMore);
-    } catch {
-      setError("failed");
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error("failed"));
     } finally {
       setBusy(false);
     }
@@ -208,7 +218,7 @@ export function ConversationWorkspace({
           className={"conversation-ai" + (ai ? " is-active" : "")}
           onClick={() => {
             setAi(true);
-            setError("");
+            setError(null);
             setText("");
           }}
         >
@@ -420,7 +430,7 @@ export function ConversationWorkspace({
                 <div ref={bottom} />
               </div>
             </div>
-            {error && <ServiceErrorNotice error={new Error(error)} ai={ai} />}
+            {error && <ServiceErrorNotice error={error} ai={ai} />}
             <form className="conversation-compose" onSubmit={submit}>
               <textarea
                 aria-label={tr("message")}

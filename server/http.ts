@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import { pool } from "./db";
 import { dashboardDomain } from "./dashboard-domain";
+import { serviceApiRevision } from "../shared/service-contract";
 export function configureHttp(app: Express) {
   const production = process.env.NODE_ENV === "production";
   const hops = Number(process.env.TRUST_PROXY_HOPS || 0);
@@ -46,12 +47,13 @@ export function configureHttp(app: Express) {
   app.use((_req, res, next) => {
     res.locals.requestId = randomUUID();
     res.setHeader("X-Request-ID", res.locals.requestId);
+    if (_req.path.startsWith("/api/") || _req.path === "/health/live") res.setHeader("X-Academy-API-Revision", serviceApiRevision);
     next();
   });
   app.use(compression());
   app.use(dashboardDomain);
   app.get("/health/live", (_req, res) =>
-    res.set("Cache-Control", "no-store").json({ status: "ok" }),
+    res.set("Cache-Control", "no-store").json({ status: "ok", apiRevision: serviceApiRevision }),
   );
   app.get("/health/ready", async (_req, res) => {
     try {

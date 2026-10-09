@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AlertCircle, ChevronDown, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { conversationApi, serviceErrorKey } from "@/lib/dashboard-api";
+import { serviceApiRevision } from "@shared/service-contract";
 export function ServiceErrorNotice({
   error,
   retry,
@@ -13,7 +14,7 @@ export function ServiceErrorNotice({
   retry?: () => void;
   ai?: boolean;
 }) {
-  const { t } = useTranslation(),
+  const { t, i18n } = useTranslation(),
     { user } = useAuth();
   const [details, setDetails] = useState(false);
   const [probe,setProbe]=useState<null | {storageReady:boolean;notificationReady:boolean;rolledBack:boolean}>(null),[probeBusy,setProbeBusy]=useState(false),[probeError,setProbeError]=useState("");
@@ -27,7 +28,7 @@ export function ServiceErrorNotice({
     retry: false,
     queryFn: async () => {
       const value = await conversationApi("/admin/service-diagnostics");
-      if (value.apiRevision !== "academy-services-2026-10-09")
+      if (value?.apiRevision !== serviceApiRevision || typeof value?.schemaReady !== "boolean")
         throw new Error("api_response_invalid");
       return value;
     },
@@ -73,7 +74,10 @@ export function ServiceErrorNotice({
           {diagnostic.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : diagnostic.isError ? (
-            <p>{t("finalPolish." + serviceErrorKey(diagnostic.error))}</p>
+            <>
+              <p>{t("finalPolish." + serviceErrorKey(diagnostic.error))}</p>
+              <button type="button" disabled={diagnostic.isFetching} onClick={() => void diagnostic.refetch()}>{t("finalPolish.connectionRetry")}</button>
+            </>
           ) : (
             <>
               <dl>
@@ -97,8 +101,12 @@ export function ServiceErrorNotice({
                 </p>
               )}
               {!diagnostic.data.schemaReady && (
-                <p>{t("finalPolish.migrationCommands")}</p>
+                <>
+                  <p>{t("finalPolish.migrationCommands")}</p>
+                  {(diagnostic.data.missingColumns?.length > 0 || diagnostic.data.missingTriggers?.length > 0 || diagnostic.data.missingTables?.length > 0) && <p>{t("communication.schemaMissing")}: <bdi>{[...(diagnostic.data.missingTables || []), ...(diagnostic.data.missingColumns || []), ...(diagnostic.data.missingTriggers || [])].join(", ")}</bdi></p>}
+                </>
               )}
+              {diagnostic.data.startedAt && <p>{t("communication.serverStarted")}: {new Date(diagnostic.data.startedAt).toLocaleString(i18n.language)}</p>}
               <p>{t("finalPolish.providerUntested")}</p>
               <p>{t("communication.storageHint")}</p>
               <button type="button" disabled={probeBusy} onClick={()=>void checkStorage()}>{t("communication."+(probeBusy?"checking":"checkDraft"))}</button>

@@ -3,17 +3,17 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
-  MessagesSquare,
   ChevronDown,
-  MessageCircle,
   X,
   Home,
   BookOpenCheck,
-  ArrowUpRight,
+  ArrowRight,
 } from "lucide-react";
 import { AccountAvatar } from "./AccountAvatar";
+import { CommunicationIcon } from "./CommunicationIcon";
+import { ServiceErrorNotice } from "./ServiceErrorNotice";
 import { useAuth } from "@/hooks/use-auth";
-import { conversationApi, conversationPeople } from "@/lib/dashboard-api";
+import { conversationPeople } from "@/lib/dashboard-api";
 const Workspace = lazy(() =>
   import("./ConversationWorkspace").then((m) => ({
     default: m.ConversationWorkspace,
@@ -32,11 +32,13 @@ export function FloatingMessenger({
     t("messenger." + key, options) as string;
   const [view, setView] = useState<"home" | "messages" | "assistant">("home");
   const [focus, setFocus] = useState<number | undefined>();
+  const [recipientId, setRecipientId] = useState<number | undefined>();
   useEffect(() => {
     const open = (e: Event) => {
       const id = (e as CustomEvent).detail;
       if (typeof id === "number") {
         setFocus(id);
+        setRecipientId(undefined);
         setView("messages");
       }
     };
@@ -64,7 +66,7 @@ export function FloatingMessenger({
           aria-haspopup="dialog"
           aria-controls="academy-messenger-dialog"
         >
-          {open ? <ChevronDown size={23} aria-hidden="true" /> : <MessagesSquare size={23} aria-hidden="true" />}
+          {open ? <ChevronDown size={25} strokeWidth={2} aria-hidden="true" /> : <CommunicationIcon filled size={26} />}
           {count > 0 && <b aria-hidden="true">{count > 99 ? "99+" : count}</b>}
         </button>
       </Dialog.Trigger>
@@ -88,7 +90,6 @@ export function FloatingMessenger({
                 height={42}
                 alt={t("p4.brand")}
               />
-              <span className="messenger-brand-mark" aria-hidden="true" />
             </div>
             <Dialog.Close asChild>
               <button type="button" className="messenger-close" aria-label={t("p4.close")}>
@@ -111,6 +112,8 @@ export function FloatingMessenger({
           <div className={"messenger-view messenger-view-" + view} key={view}>
           {view === "home" ? (
             <div className="messenger-home">
+              {people.isPending && <p className="messenger-home-status" role="status">{t("p4.loading")}</p>}
+              {people.isError && <ServiceErrorNotice error={people.error} retry={() => void people.refetch()} />}
               {people.data?.find((person) => person.lastMessage) && (() => {
                 const recent = people.data.find((person) => person.lastMessage)!;
                 return (
@@ -118,7 +121,8 @@ export function FloatingMessenger({
                     type="button"
                     className="messenger-home-card messenger-recent"
                     onClick={() => {
-                      setFocus(recent.lastMessageId);
+                      setFocus(undefined);
+                      setRecipientId(recent.id);
                       setView("messages");
                     }}
                   >
@@ -134,7 +138,7 @@ export function FloatingMessenger({
                       <strong>{recent.name}</strong>
                       <small className="messenger-preview">{recent.lastMessage}</small>
                     </span>
-                    <ArrowUpRight aria-hidden="true" />
+                    <ArrowRight className="messenger-forward" size={18} aria-hidden="true" />
                   </button>
                 );
               })()}
@@ -143,26 +147,24 @@ export function FloatingMessenger({
                 className="messenger-home-card"
                 onClick={() => setView("messages")}
               >
-                <span className="messenger-card-icon"><MessageCircle aria-hidden="true" /></span>
                 <span>
                   <strong>{tr("send")}</strong>
                   <small>
                     {count > 0 ? tr("unread", { count } as any) : tr("direct")}
                   </small>
                 </span>
-                <ArrowUpRight aria-hidden="true" />
+                <CommunicationIcon filled size={22} />
               </button>
               <button
                 type="button"
                 className="messenger-home-card"
                 onClick={() => setView("assistant")}
               >
-                <span className="messenger-card-icon messenger-card-icon-study"><BookOpenCheck aria-hidden="true" /></span>
                 <span>
                   <strong>{t("dashboardUpdate.assistant")}</strong>
                   <small>{tr("aiHint")}</small>
                 </span>
-                <ArrowUpRight aria-hidden="true" />
+                <BookOpenCheck size={22} strokeWidth={1.8} aria-hidden="true" />
               </button>
               <div className="messenger-home-note">
                 <img src="/logo-icon.png" width={40} height={40} alt="" />
@@ -175,6 +177,7 @@ export function FloatingMessenger({
                 key={view}
                 initialAI={view === "assistant"}
                 focusId={focus}
+                initialRecipientId={recipientId}
                 onBack={
                   view === "assistant" ? () => setView("home") : undefined
                 }
@@ -186,7 +189,7 @@ export function FloatingMessenger({
             {(
               [
                 ["home", Home],
-                ["messages", MessageCircle],
+                ["messages", CommunicationIcon],
                 ["assistant", BookOpenCheck],
               ] as const
             ).map(([key, Icon]) => (
