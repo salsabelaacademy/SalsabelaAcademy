@@ -19,6 +19,8 @@ type Person = {
   role?: string;
   avatarUrl?: string;
   unread: number;
+  lastMessage?:string;
+  lastMessageAt?:string;
 };
 type Message = {
   id: number;
@@ -240,6 +242,7 @@ export function ConversationWorkspace({
               .map((person) => (
                 <button
                   key={person.id}
+                  disabled={busy}
                   aria-current={
                     !ai && selected === person.id ? "true" : undefined
                   }
@@ -264,7 +267,7 @@ export function ConversationWorkspace({
                   )}
                   <span>
                     <strong>{person.name}</strong>
-                    <small>{tr("activeChat")}</small>
+                    <small>{person.lastMessage || tr("activeChat")}</small>
                   </span>
                   {person.unread > 0 && (
                     <b className="conversation-unread">{person.unread}</b>
@@ -423,7 +426,7 @@ export function ConversationWorkspace({
                 aria-label={tr("message")}
                 placeholder={tr("message")}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => { setText(e.target.value); setKey(crypto.randomUUID()); }}
                 rows={2}
                 maxLength={ai ? 2000 : 5000}
                 disabled={busy}

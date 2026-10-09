@@ -24,6 +24,13 @@ export function installMutationNotifications() {
       .clone()
       .json()
       .catch(() => ({}));
+    // Conversation bubbles and inline errors already confirm delivery; avoid covering the phone header.
+    if (/^\/api\/conversations\/\d+$/.test(url.pathname)) {
+      if (response.ok) window.dispatchEvent(new Event("academy:data-changed"));
+      return response;
+    }
+    // The storage probe is a rolled-back check, not an academy mutation.
+    if (url.pathname === "/api/admin/conversations/check") return response;
     if (response.ok) {
       if (
         url.pathname === "/api/admin/email-deliveries/retry" &&

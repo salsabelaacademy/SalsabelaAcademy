@@ -1,5 +1,6 @@
 export const finalPolishTranslations = {
   en: {
+    message_storage_error:"The database could not save your message. Your draft is preserved; the administrator can run the safe storage check.",
     api_endpoint_missing:
       "This API route is missing on the running server. Deploy the matching backend files and restart the app.",
     api_response_invalid:
@@ -52,6 +53,7 @@ export const finalPolishTranslations = {
       "Verify the sending domain in Resend and restart the app after updating server settings.",
   },
   ar: {
+    message_storage_error:"تعذّر حفظ رسالتك في قاعدة البيانات. بقيت مسودتك؛ يمكن للمدير إجراء فحص الحفظ الآمن.",
     api_endpoint_missing:
       "مسار الخدمة غير موجود في الخادم الحالي. ارفع ملفات الخادم المطابقة للتحديث ثم أعد تشغيل التطبيق.",
     api_response_invalid:

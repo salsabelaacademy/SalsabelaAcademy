@@ -3,11 +3,12 @@
 import { FloatingMessenger } from './FloatingMessenger';
 import { DashboardSearch, type SearchRecord } from './DashboardSearch';
 import { LessonCompletion } from './LessonCompletion';
-import {useLocation} from 'wouter';
+import {useLocation,useSearch} from 'wouter';
 import {Search,RefreshCw} from 'lucide-react';
 import { AccountAvatar } from "./AccountAvatar";
 import { useRef, useState, useEffect, type ReactNode } from 'react';
-import * as Popover from '@radix-ui/react-popover';
+import * as Dropdown from '@radix-ui/react-dropdown-menu';
+import { NotificationInbox } from './NotificationInbox';
 import { PanelLeftClose, PanelLeftOpen, UserRound } from 'lucide-react';
 import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +22,11 @@ import './dashboard.css';
 
 const icons: Record<string, LucideIcon> = { overview: LayoutDashboard, applications: ClipboardList, students: Users, lessons: CalendarDays, curriculum: BookOpen, attendance: CheckCheck, messages: Mail, notifications: Bell, contactInbox: Inbox, audit: History, settings: Settings, programs: GraduationCap, homework: NotebookPen, profile: UserRound };
 type Notification = {id: number; title: string; body: string; created_at: string; read_at: string | null};
-type ShellProps = { admin: boolean; user: AuthUser; tab: string; tabs: string[]; unread: number; onRefresh: () => void; refreshing: boolean; notifications: Notification[]; notificationDate: (value: string) => string; onRead: (id: number) => void; notificationBusy: boolean; notificationError: string; onTab: (key: string) => void; onRecord: (record: SearchRecord) => void; onLogout: () => void; children: ReactNode };
-export function DashboardShell({ admin, user, tab, tabs, unread, notifications, notificationDate, onRead, notificationBusy, notificationError, onRefresh, refreshing, onTab, onRecord, onLogout, children }: ShellProps) {
+type ShellProps = { admin: boolean; user: AuthUser; tab: string; tabs: string[]; unread: number; onRefresh: () => void; refreshing: boolean; notifications: Notification[]; notificationDate: (value: string) => string; onTab: (key: string) => void; onRecord: (record: SearchRecord) => void; onLogout: () => void; children: ReactNode };
+export function DashboardShell({ admin, user, tab, tabs, unread, notifications, notificationDate, onRefresh, refreshing, onTab, onRecord, onLogout, children }: ShellProps) {
   const { t } = useTranslation();
   const [,navigate]=useLocation();
+  const urlSearch=useSearch();
   const tr = (key: string) => t('p4.' + key);
   const dialog = useRef<HTMLDialogElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
@@ -33,10 +35,11 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
   const [chatOpen,setChatOpen]=useState(false);
   useEffect(()=>{const open=()=>setChatOpen(true);window.addEventListener("academy:open-chat",open);if(new URLSearchParams(location.search).get("tab")==="messages")open();return()=>window.removeEventListener("academy:open-chat",open);},[]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  useEffect(()=>{const show=()=>{setChatOpen(false);setNotificationsOpen(true);};window.addEventListener('academy:open-notifications',show);if(new URLSearchParams(urlSearch).get('tab')==='notifications')show();return()=>window.removeEventListener('academy:open-notifications',show);},[urlSearch]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickOpen,setQuickOpen]=useState(false);
   useEffect(()=>{const shortcut=(event:KeyboardEvent)=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setQuickOpen(value=>!value);}};window.addEventListener('keydown',shortcut);return()=>window.removeEventListener('keydown',shortcut);},[]);
-  const quickKeys=[...tabs,...(admin?['integrations','blog']:[])];
+  const quickKeys=[...tabs,'notifications',...(admin?['integrations','blog']:[])];
 
   useEffect(() => { try { localStorage.setItem('salsabela-sidebar-collapsed', String(collapsed)); } catch { /* Private browsers can disable storage. */ } }, [collapsed]);
   useEffect(() => {
@@ -48,8 +51,7 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
     media.addEventListener('change', closeOnDesktop);
     return () => { document.body.style.overflow = previous; media.removeEventListener('change', closeOnDesktop); };
   }, [drawerOpen]);
-  const select = (key: string) => { if(key==="messages"){setChatOpen(true);return;}  if(key==='blog'||key==='integrations')navigate(key==='blog'?'/admin':'/admin/integrations');else onTab(key); dialog.current?.close(); setNotificationsOpen(false);setQuickOpen(false); };
-  const importantNotifications = [...notifications].sort((a, b) => Number(!!a.read_at) - Number(!!b.read_at) || +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 5);
+  const select = (key: string) => { if(key==="messages"||key==="notifications"){setChatOpen(key==="messages");setNotificationsOpen(key==="notifications");dialog.current?.close();setQuickOpen(false);return;}  if(key==='blog'||key==='integrations')navigate(key==='blog'?'/admin':'/admin/integrations');else onTab(key); dialog.current?.close(); setNotificationsOpen(false);setQuickOpen(false); };
   const navigation = <>
     <Link href="/" className="dash-brand"><img src="/logo-icon.png" width="48" height="48" alt={tr('brand')} /><span>{tr('brand')}<small>{tr(admin ? 'adminRole' : 'studentRole')}</small></span></Link>
     <p className="dash-nav-label">{tr('workspaceLabel')}</p>
@@ -59,24 +61,26 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
     <div className="dash-account"><span className="dash-avatar"><AccountAvatar user={user} /></span><div><strong>{user.name}</strong><small>{tr(admin ? 'adminRole' : 'studentRole')}</small></div><button type="button" onClick={onLogout} aria-label={tr('signout')} title={tr('signout')}><LogOut size={19} aria-hidden="true" /></button></div>
   </>;
   return <div className={`dash-root${collapsed ? ' dash-collapsed' : ''}`}>
-    <FloatingMessenger open={chatOpen} onOpenChange={setChatOpen} />
+    <FloatingMessenger open={chatOpen} onOpenChange={value=>{setChatOpen(value);if(value)setNotificationsOpen(false);}} />
     <a className="p4-skip" href="#dashboard-content">{tr('skip')}</a>
     <aside id="dashboard-sidebar" className="dash-sidebar">{navigation}</aside>
     <dialog ref={dialog} aria-label={tr("menu")} className="dash-drawer" onClose={() => { setDrawerOpen(false); menu.current?.focus(); }} onClick={e => { if (e.target === dialog.current) dialog.current.close(); }}><button type="button" className="dash-close" aria-label={tr('close')} onClick={() => dialog.current?.close()}><X aria-hidden="true" /></button>{navigation}</dialog>
-    <DashboardSearch open={quickOpen} onOpenChange={setQuickOpen} sections={quickKeys} onSection={select} onRecord={record=>{setQuickOpen(false);setNotificationsOpen(false);dialog.current?.close();if(record.kind==="message"){setChatOpen(true);window.dispatchEvent(new CustomEvent("academy:open-chat",{detail:record.id}));}else onRecord(record);}} />
+    <DashboardSearch open={quickOpen} onOpenChange={setQuickOpen} sections={quickKeys} onSection={select} onRecord={record=>{setQuickOpen(false);setNotificationsOpen(false);dialog.current?.close();if(record.kind==="notification"){setChatOpen(false);setNotificationsOpen(true);}else if(record.kind==="message"){setChatOpen(true);window.dispatchEvent(new CustomEvent("academy:open-chat",{detail:record.id}));}else onRecord(record);}} />
     <div className="dash-main"><header className="dash-topbar">
       <button type="button" className="dash-collapse-toggle" aria-label={tr(collapsed ? 'expandSidebar' : 'collapseSidebar')} title={tr(collapsed ? 'expandSidebar' : 'collapseSidebar')} aria-expanded={!collapsed} aria-controls="dashboard-sidebar" onClick={() => setCollapsed(value => !value)}>{collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}</button>
       <button ref={menu} type="button" className="dash-menu" aria-label={tr('menu')} aria-haspopup="dialog" aria-expanded={drawerOpen} onClick={() => { dialog.current?.showModal(); setDrawerOpen(true); }}><Menu aria-hidden="true" /></button><div className="dash-breadcrumb"><span>{tr(admin ? 'workspaceAdmin' : 'workspaceStudent')}</span><strong>{tr(tab)}</strong></div><div className="dash-toolbar"><button type="button" className="dash-tool-button" aria-label={t('workspace.searchTitle')} title={t('workspace.searchTitle')} aria-keyshortcuts="Control+k Meta+k" onClick={()=>setQuickOpen(true)}><Search size={20} aria-hidden="true" /></button><button type="button" className="dash-tool-button dash-refresh-button" aria-label={t(refreshing?'review.refreshing':'review.refresh')} title={t('review.refresh')} disabled={refreshing} onClick={onRefresh}><RefreshCw size={19} className={refreshing?'dash-refreshing':undefined} aria-hidden="true" /></button><DisplayControls showLanguage={false} />
-      <Popover.Root open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-        <Popover.Trigger asChild><button type="button" className="dash-notifications" aria-label={tr('notifications')}><Bell size={20} aria-hidden="true" />{unread > 0 && <span />}</button></Popover.Trigger>
-        <Popover.Portal><Popover.Content dir={language === 'ar' ? 'rtl' : 'ltr'} className="dash-notice-pop" align="end" sideOffset={14} collisionPadding={12} aria-label={tr('notifications')}>
-          <div className="dash-notice-heading"><div><h2>{tr('notifications')}</h2><p>{tr('importantNotifications')}</p></div><Popover.Close aria-label={tr('close')}><X size={19} aria-hidden="true" /></Popover.Close></div>
-          <div className="dash-notice-list">{importantNotifications.map(n => <article className={`dash-notice-item${n.read_at ? '' : ' is-unread'}`} key={n.id}><span className="dash-notice-symbol"><Bell size={18} aria-hidden="true" /></span><div><h3>{n.title.startsWith('notify_') ? tr(n.title) : n.title}</h3><p>{n.body}</p><time>{notificationDate(n.created_at)}</time>{!n.read_at && <button disabled={notificationBusy} onClick={() => onRead(n.id)}>{tr('markRead')}</button>}</div></article>)}{!importantNotifications.length && <div className="dash-notice-empty"><Bell size={30} aria-hidden="true" /><p>{tr('notificationsEmpty')}</p></div>}</div>
-          {notificationError && <p role="alert">{notificationError}</p>}
-          <button className="dash-notice-all" onClick={() => select('notifications')}>{tr('allNotifications')} <ArrowUpRight size={16} aria-hidden="true" /></button>
-        </Popover.Content></Popover.Portal>
-      </Popover.Root>
-      <button type="button" className="dash-avatar dash-profile" aria-label={tr('profile')} onClick={() => select('profile')}><AccountAvatar user={user} /></button></div></header>
+      <NotificationInbox open={notificationsOpen} onOpenChange={value=>{setNotificationsOpen(value);if(value)setChatOpen(false);}} unread={unread} items={notifications} date={notificationDate} onDone={onRefresh} />
+      <Dropdown.Root dir={language==='ar'?'rtl':'ltr'}><Dropdown.Trigger asChild><button type="button" className="dash-avatar dash-profile" aria-label={tr('profile')}><AccountAvatar user={user} /></button></Dropdown.Trigger>
+      <Dropdown.Portal><Dropdown.Content className="academy-account-menu" align="end" sideOffset={12} collisionPadding={10}>
+        <div className="account-menu-identity"><span className="dash-avatar"><AccountAvatar user={user}/></span><div><strong>{user.name}</strong><bdi>{user.email}</bdi><small>{tr(admin?'adminRole':'studentRole')}</small></div></div>
+        <Dropdown.Item onSelect={()=>select('profile')}><UserRound size={19}/>{tr('profile')}</Dropdown.Item>
+        <Dropdown.Item onSelect={()=>select('settings')}><Settings size={19}/>{tr('settings')}</Dropdown.Item>
+        <Dropdown.Item onSelect={()=>select('notifications')}><Bell size={19}/>{tr('notifications')}{unread>0&&<b>{unread}</b>}</Dropdown.Item>
+        <Dropdown.Separator/>
+        <Dropdown.Item onSelect={()=>navigate('/')}><ArrowUpRight size={19}/>{t('communication.website')}</Dropdown.Item>
+        <Dropdown.Item className="account-menu-signout" onSelect={onLogout}><LogOut size={19}/>{tr('signout')}</Dropdown.Item>
+      </Dropdown.Content></Dropdown.Portal></Dropdown.Root>
+      </div></header>
       <main id="dashboard-content" className="p4-workspace dash-content" tabIndex={-1}>{children}</main>
       <footer className="dash-footer"><span>{tr('brand')}</span><span>{tr('welcomeNote')}</span></footer>
     </div>

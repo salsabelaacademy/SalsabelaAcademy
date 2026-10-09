@@ -1,4 +1,3 @@
-import {NotificationCenter} from '@/components/NotificationCenter';
 import {RecurringLessonForm} from '@/components/RecurringLessonForm';
 import { DashboardRecords, AuditEntry } from '@/components/DashboardRecords';
 import { programLabel } from '@/lib/program-label';
@@ -139,8 +138,8 @@ function ActionForm({
     </form>
   );
 }
-const adminDashboardSections = ["overview","applications","students","lessons","attendance","notifications","contactInbox","audit","profile","settings"];
-const studentDashboardSections = ["overview","lessons","programs","attendance","notifications","profile","settings"];
+const adminDashboardSections = ["overview","applications","students","lessons","attendance","contactInbox","audit","profile","settings"];
+const studentDashboardSections = ["overview","lessons","programs","attendance","profile","settings"];
 const dashboardSections = Array.from(new Set([...adminDashboardSections, ...studentDashboardSections]));
 export default function Dashboard() {
   const { t } = useTranslation(),
@@ -258,7 +257,7 @@ export default function Dashboard() {
       </main>
     );
   return (
-    <DashboardShell onRecord={record=>{setNotice('');if(record.kind==='post'){navigate('/admin/edit/'+record.id);return;}setTab(record.tab);navigate(getDashboardPath(user.role)+'?tab='+encodeURIComponent(record.tab)+'&focus='+encodeURIComponent(record.kind+':'+record.id));}} onRefresh={reload} refreshing={refreshing} admin={admin} user={user} tab={tab} tabs={tabs} unread={data?.stats?.unreadNotifications || 0} notifications={data?.notifications || []} notificationDate={date} onRead={(id) => act("/notifications/" + id + "/read", "PATCH")} notificationBusy={busy} notificationError={notice === "failed" ? tr("failed") : ""} onTab={(key) => {setTab(key);setNotice("");navigate(getDashboardPath(user.role)+'?tab='+encodeURIComponent(key));}} onLogout={async () => {
+    <DashboardShell onRecord={record=>{setNotice('');if(record.kind==='post'){navigate('/admin/edit/'+record.id);return;}setTab(record.tab);navigate(getDashboardPath(user.role)+'?tab='+encodeURIComponent(record.tab)+'&focus='+encodeURIComponent(record.kind+':'+record.id));}} onRefresh={reload} refreshing={refreshing} admin={admin} user={user} tab={tab} tabs={tabs} unread={data?.stats?.unreadNotifications || 0} notifications={data?.notifications || []} notificationDate={date} onTab={(key) => {setTab(key);setNotice("");navigate(getDashboardPath(user.role)+'?tab='+encodeURIComponent(key));}} onLogout={async () => {
       try { await logout(); navigate("/login"); } catch { setNotice("failed"); }
     }}>
       {notice && (
@@ -552,7 +551,7 @@ export default function Dashboard() {
             </>
           )}
 
-          {tab === "notifications" && <NotificationCenter items={data.notifications} date={date} onDone={reload}/>}
+
           {tab === "contactInbox" && admin && (
             <>
               <div className="dash-page-heading"><h2>{tr("contactInbox")}</h2><p>{t('refinement.contactHint')}</p></div>

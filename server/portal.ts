@@ -1,3 +1,4 @@
+import {registerMessageDiagnostics} from "./message-diagnostics";
 import {registerServiceDiagnostics} from "./service-diagnostics";
 import {serviceError} from "./service-errors";
 import {registerAccountPreferences} from "./account-preferences";
@@ -64,6 +65,7 @@ export function registerPortalRoutes(app: Express) {
   app.patch('/api/notifications/read-all',requireAuth(['admin','student']),run(async(req,res)=>{await pool.query('UPDATE notifications SET read_at=now() WHERE user_id=$1 AND read_at IS NULL',[(req as any).auth.user.id]);res.json({ok:true});}));
   registerAccountPreferences(app);
   registerConversations(app);
+  registerMessageDiagnostics(app);
   registerRecurringLessons(app);
   registerDashboardSearch(app);
   registerAvatars(app, publicLimit);

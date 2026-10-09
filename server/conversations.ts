@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { pool } from "./db";
 import { requireAuth } from "./auth";
+import { messageFailure } from "./message-diagnostics";
 import { serviceError } from "./service-errors";
 import { aiInput, generateAnswer } from "./gemini";
 const run =
@@ -11,7 +12,8 @@ const run =
     try {
       await fn(req, res, next);
     } catch (error) {
-      if (!serviceError(error, res)) next(error);
+      if (req.path.startsWith("/api/conversations")) messageFailure(error,res,res.locals.communicationStage || "conversation_request");
+      else if (!serviceError(error, res)) next(error);
     }
   };
 export function allowedConversation(
@@ -49,7 +51,7 @@ export function registerConversations(app: Express) {
     run(async (req, res) => {
       const actor = (req as any).auth.user;
       const result = await pool.query(
-        `SELECT u.id,u.name,u.role,u.avatar_url AS "avatarUrl",(SELECT count(*)::int FROM messages m WHERE m.sender_id=u.id AND m.recipient_id=$1 AND m.read_at IS NULL) AS unread FROM users u WHERE u.role=$2 AND u.status='active' ORDER BY u.name,u.id`,
+        `SELECT u.id,u.name,u.role,u.avatar_url AS "avatarUrl",(SELECT count(*)::int FROM messages m WHERE m.sender_id=u.id AND m.recipient_id=$1 AND m.read_at IS NULL) AS unread, recent.id AS "lastMessageId",recent.body AS "lastMessage",recent.created_at AS "lastMessageAt" FROM users u LEFT JOIN LATERAL (SELECT m.id,m.body,m.created_at FROM messages m WHERE (m.sender_id=u.id AND m.recipient_id=$1) OR (m.sender_id=$1 AND m.recipient_id=u.id) ORDER BY m.id DESC LIMIT 1) recent ON true WHERE u.role=$2 AND u.status='active' ORDER BY recent.created_at DESC NULLS LAST,u.name,u.id`,
         [actor.id, actor.role === "admin" ? "student" : "admin"],
       );
       res.set("Cache-Control", "no-store").json(result.rows);
@@ -109,8 +111,10 @@ export function registerConversations(app: Express) {
         })
         .strict()
         .parse(req.body);
+      res.locals.communicationStage="rate_limit";
       if (!(await limits("message:" + actor.id, 60, 3600)))
         return res.status(429).json({ code: "limited" });
+      res.locals.communicationStage="connect";
       const c = await pool.connect();
       try {
         await c.query("BEGIN");
@@ -129,6 +133,7 @@ export function registerConversations(app: Express) {
             return res.status(409).json({ code: "conflict" });
           return res.json({ id: prior.id, duplicate: true });
         }
+        res.locals.communicationStage="message_insert";
         const message = (
           await c.query(
             "INSERT INTO messages(sender_id,recipient_id,subject,body,request_key) VALUES($1,$2,$3,$4,$5) RETURNING id",

@@ -3,12 +3,15 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  MessagesSquare,
+  ChevronDown,
   MessageCircle,
   X,
   Home,
   BookOpenCheck,
   ArrowUpRight,
 } from "lucide-react";
+import { AccountAvatar } from "./AccountAvatar";
 import { useAuth } from "@/hooks/use-auth";
 import { conversationApi, conversationPeople } from "@/lib/dashboard-api";
 const Workspace = lazy(() =>
@@ -51,21 +54,21 @@ export function FloatingMessenger({
     0,
   );
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange} modal={false}>
+    <Dialog.Root open={open} onOpenChange={onOpenChange} modal>
       <Dialog.Trigger asChild>
         <button
           className="dashboard-chat-launcher"
           aria-label={t("dashboardUpdate.conversations")}
         >
-          <MessageCircle size={25} />
+          {open ? <ChevronDown size={25} /> : <MessagesSquare size={25} />}
           {count > 0 && <b>{count > 99 ? "99+" : count}</b>}
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
+        <Dialog.Overlay className="communication-overlay" />
         <Dialog.Content
           className="academy-messenger"
           dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
-          onInteractOutside={(e) => e.preventDefault()}
         >
           <div
             className={
@@ -95,8 +98,10 @@ export function FloatingMessenger({
                 : t("dashboardUpdate.conversationIntro")}
             </Dialog.Description>
           </div>
+          <div className={"messenger-view messenger-view-"+view} key={view}>
           {view === "home" ? (
             <div className="messenger-home">
+              {people.data?.find(p=>p.lastMessage) && (()=>{const recent=people.data.find(p=>p.lastMessage)!;return <button className="messenger-home-card messenger-recent" onClick={()=>{setFocus(recent.lastMessageId);setView("messages");}}><span className="conversation-avatar">{recent.role==="admin"&&!recent.avatarUrl?<img src="/logo-icon.png" width={44} height={44} alt=""/>:<AccountAvatar user={recent}/>}</span><span><small>{t("communication.recent")}</small><strong>{recent.name}</strong><small className="messenger-preview">{recent.lastMessage}</small></span><ArrowUpRight/></button>;})()}
               <button
                 className="messenger-home-card"
                 onClick={() => setView("messages")}
@@ -138,6 +143,7 @@ export function FloatingMessenger({
               />
             </Suspense>
           )}
+          </div>
           <nav className="messenger-tabs" aria-label={tr("navigation")}>
             {(
               [

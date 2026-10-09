@@ -16,6 +16,9 @@ export function ServiceErrorNotice({
   const { t } = useTranslation(),
     { user } = useAuth();
   const [details, setDetails] = useState(false);
+  const [probe,setProbe]=useState<null | {storageReady:boolean;notificationReady:boolean;rolledBack:boolean}>(null),[probeBusy,setProbeBusy]=useState(false),[probeError,setProbeError]=useState("");
+  const reference=(error as {reference?:string})?.reference;
+  async function checkStorage(){if(probeBusy)return;setProbeBusy(true);setProbeError("");setProbe(null);try{const value=await conversationApi("/admin/conversations/check","POST");if(value?.rolledBack!==true || typeof value.storageReady!=="boolean")throw new Error("api_response_invalid");setProbe(value);}catch(e){setProbeError(e instanceof Error?e.message:"service_unavailable");}finally{setProbeBusy(false);}}
   const key = serviceErrorKey(error),
     message = error instanceof Error ? error.message : "";
   const diagnostic = useQuery<any>({
@@ -45,6 +48,7 @@ export function ServiceErrorNotice({
         <AlertCircle size={18} aria-hidden />
         <p>{t(translation)}</p>
       </div>
+      {reference && user?.role==="admin" && <small>{t("communication.reference")}: <bdi>{reference}</bdi></small>}
       <div className="service-error-actions">
         {retry && (
           <button type="button" onClick={retry}>
@@ -96,6 +100,10 @@ export function ServiceErrorNotice({
                 <p>{t("finalPolish.migrationCommands")}</p>
               )}
               <p>{t("finalPolish.providerUntested")}</p>
+              <p>{t("communication.storageHint")}</p>
+              <button type="button" disabled={probeBusy} onClick={()=>void checkStorage()}>{t("communication."+(probeBusy?"checking":"checkDraft"))}</button>
+              {probe && <p role="status">{t("communication.storageReady")}{!probe.notificationReady&&<> {t("communication.noPipeline")}</>}</p>}
+              {probeError && <p role="alert">{t(probeError==="no_active_student"?"communication.noRecipient":probeError==="limited"?"dashboardUpdate.limited":"finalPolish."+serviceErrorKey(new Error(probeError)))}</p>}
               <button type="button" onClick={() => void diagnostic.refetch()}>
                 {t("finalPolish.connectionRetry")}
               </button>

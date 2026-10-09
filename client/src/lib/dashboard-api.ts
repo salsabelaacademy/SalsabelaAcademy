@@ -9,6 +9,7 @@ export const serviceErrorCodes = [
   "request_forbidden",
   "origin_rejected",
   "service_unavailable",
+  "message_storage_error",
 ] as const;
 export function serviceErrorKey(error: unknown) {
   const key = error instanceof Error ? error.message : "";
@@ -52,6 +53,7 @@ export async function conversationApi(
     throw new Error("api_response_invalid");
   }
   if (!r.ok) {
+    const failure = (code:string)=>{const error=new Error(code) as Error & {reference?:string};const ref=r.headers.get("X-Request-ID") || value?.reference;if(typeof ref==="string" && /^[a-f0-9-]{36}$/i.test(ref))error.reference=ref;return error;};
     if (r.status === 403 && /origin/i.test(String(value?.message)))
       throw new Error("origin_rejected");
     // Keep provider and resource errors distinct from a missing route or expired session.
@@ -59,11 +61,11 @@ export async function conversationApi(
       typeof value?.code === "string" &&
       !["forbidden", "unauthorized"].includes(value.code)
     )
-      throw new Error(value.code);
+      throw failure(value.code);
     if (r.status === 401) throw new Error("session_expired");
     if (r.status === 404) throw new Error("api_endpoint_missing");
     if (r.status === 403) throw new Error("request_forbidden");
-    throw new Error("service_unavailable");
+    throw failure("service_unavailable");
   }
   return value;
 }
