@@ -30,7 +30,8 @@
     "messages:check": "node --env-file-if-exists=.env --import tsx script/check-message-storage.ts",
     "messages:repair-sequences": "node --env-file-if-exists=.env --import tsx script/check-message-storage.ts --repair-sequences",
     "db:migrate:email-integrity": "node --env-file-if-exists=.env --import tsx script/apply-email-integrity.ts",
-    "db:migrate:email-identifiers": "node --env-file-if-exists=.env --import tsx script/apply-email-identifiers.ts"
+    "db:migrate:email-identifiers": "node --env-file-if-exists=.env --import tsx script/apply-email-identifiers.ts",
+    "db:migrate:reminders": "node --env-file-if-exists=.env --import tsx script/apply-lesson-reminders.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -10,6 +10,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startWorker } from "./integrations/service";
 import { sitePresentation } from "./site-presentation";
+import { startLessonReminderWorker } from "./lesson-reminders";
 
 validateEnvironment();
 const app = express();
@@ -77,7 +78,8 @@ app.use((req, res, next) => {
       const stopIntegrationWorker = startWorker();
       const stopPush = startPushWorker();
       const stopEmail = startEmailWorker();
-      const stopWorker = () => { closeConversationEvents(); stopIntegrationWorker(); stopPush(); stopEmail(); };
+      const stopReminders = startLessonReminderWorker();
+      const stopWorker = () => { closeConversationEvents(); stopIntegrationWorker(); stopPush(); stopEmail(); stopReminders(); };
       httpServer.once("close", stopWorker);
       for(const signal of ["SIGTERM","SIGINT"] as const) process.once(signal,()=>{stopWorker();httpServer.close(()=>{void pool.end().then(()=>process.exit(0));});setTimeout(()=>process.exit(1),15000).unref();});
     },

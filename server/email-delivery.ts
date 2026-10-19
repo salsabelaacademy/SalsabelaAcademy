@@ -2,6 +2,10 @@ import { emailErrorCode, emailErrorCodes } from "./email-errors";
 import { Resend } from "resend";
 import { pool } from "./db";
 import { brandedEmail } from "./email-template";
+import { lessonMail } from '../shared/lesson-mail';
+import { followupTranslations } from '../shared/lesson-followup';
+import { lessonDashboard, lessonJoinPath } from '../shared/lesson-links';
+import { reminderDeliveryState } from './lesson-reminders';
 export function emailReady(env = process.env) {
   try {
     const u = new URL(env.FRONTEND_URL || "");
@@ -79,6 +83,27 @@ export function notificationEmail(row: any, origin: string) {
       });
     details.push({ label: words.timezone, value: zone });
   }
+  const copy=lessonMail[lang],followup=followupTranslations[lang];
+  const reminder=['lesson_reminder_before','lesson_reminder_start'].includes(ctx.kind);
+  const report=ctx.kind==='lesson_report',issue=ctx.kind==='lesson_issue';
+  if(reminder||report||issue){
+    const remaining=Math.max(1,Math.min(10,Math.ceil((Date.parse(ctx.startsAt)-Date.now())/60000)||10));
+    const beforeTitle=remaining===1?copy.beforeOne:remaining===2?copy.beforeTwo:copy.beforeMinutes.replace('{{minutes}}',new Intl.NumberFormat(lang).format(remaining));
+    const title=report?copy.report:issue?copy.issue:ctx.kind==='lesson_reminder_before'?beforeTitle:copy.start;
+    let body=report?copy.reportBody:issue?copy.issueBody:ctx.kind==='lesson_reminder_before'?copy.beforeBody:row.reminderCanJoin?copy.startBody:copy.pendingBody;
+    if(report){
+      body+='\n\n'+followup.covered+'\n'+String(ctx.covered||'');
+      if(ctx.adjustPlan)body+='\n\n'+followup.adjustPlan;
+      details.push({label:followup.behavior,value:String(ctx.behavior)+'/5'},{label:followup.participation,value:String(ctx.participation)+'/5'});
+    }
+    if(issue)body+='\n\n'+(followup[ctx.issueKind as keyof typeof followup]||followup.issueReceived);
+    if((report||issue)&&ctx.comment)body+='\n\n'+followup.comment+'\n'+ctx.comment;
+    details.unshift({label:words.title,value:String(ctx.lessonTitle||row.body||'')});
+    if(row.role==='admin'&&ctx.studentName)details.push({label:copy.student,value:String(ctx.studentName)});
+    const direct=ctx.kind==='lesson_reminder_start'&&row.reminderCanJoin;
+    const url=origin+(direct?lessonJoinPath(ctx.lessonId,ctx.startsAt,lang):lessonDashboard(ctx.lessonId,row.role,lang));
+    return {subject:title,...brandedEmail({title,body,language:lang,name:row.name,url,button:direct?copy.join:copy.dashboard,details},origin)};
+  }
   const title =
     words[row.title] ||
     (ar ? "تحديث جديد من أكاديمية سلسبيلا" : "A Salsabela Academy update");
@@ -124,11 +149,12 @@ export async function processEmailJob(
   if (!job) return false;
   try {
     const result = await pool.query(
-      `SELECT n.title,n.body,n.context,u.name,u.email,u.role,u.status,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.preferred_language,''),a.preferred_language,'en') ELSE COALESCE(a.preferred_language,'en') END AS language,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.timezone,''),a.timezone,'UTC') ELSE COALESCE(a.timezone,'UTC') END AS timezone,COALESCE(p.email_updates,true) AS enabled FROM notifications n JOIN users u ON u.id=n.user_id LEFT JOIN account_details a ON a.user_id=u.id LEFT JOIN student_profiles s ON s.user_id=u.id LEFT JOIN account_preferences p ON p.user_id=u.id WHERE n.id=$1 AND n.created_at>now()-interval '23 hours'`,
+      `SELECT n.title,n.body,n.context,u.id AS user_id,u.name,u.email,u.role,u.status,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.preferred_language,''),a.preferred_language,'en') ELSE COALESCE(a.preferred_language,'en') END AS language,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.timezone,''),a.timezone,'UTC') ELSE COALESCE(a.timezone,'UTC') END AS timezone,COALESCE(p.email_updates,true) AS enabled FROM notifications n JOIN users u ON u.id::text=n.user_id::text LEFT JOIN account_details a ON a.user_id::text=u.id::text LEFT JOIN student_profiles s ON s.user_id::text=u.id::text LEFT JOIN account_preferences p ON p.user_id::text=u.id::text WHERE n.id=$1 AND n.created_at>now()-interval '23 hours'`,
       [job.notification_id],
     );
     const row = result.rows[0];
-    if (!row || row.status !== "active" || !row.enabled) {
+    const reminderState = row ? await reminderDeliveryState(row) : {eligible:false,canJoin:false};
+    if (!row || row.status !== "active" || !row.enabled || !reminderState.eligible) {
       await pool.query(
         "UPDATE email_deliveries SET status='skipped' WHERE id=$1",
         [job.id],
@@ -138,7 +164,7 @@ export async function processEmailJob(
     const draft = {
       from: process.env.RESEND_FROM!,
       to: row.email,
-      ...notificationEmail(row, new URL(process.env.FRONTEND_URL!).origin),
+      ...notificationEmail({...row,reminderCanJoin:reminderState.canJoin}, new URL(process.env.FRONTEND_URL!).origin),
     };
     const saved = await pool.query(
       "UPDATE email_deliveries SET payload=COALESCE(payload,$2::jsonb) WHERE id=$1 RETURNING payload",

@@ -208,7 +208,7 @@ export function registerLessonFollowups(app: Express) {
         }
         const tr =
           followupTranslations[
-            ["ar", "Arabic"].includes(lesson.preferred_language) ? "ar" : "en"
+            ["ar", "arabic"].includes(String(lesson.preferred_language).toLowerCase()) ? "ar" : "en"
           ];
         const message =
           body.kind === "report"
@@ -216,11 +216,14 @@ export function registerLessonFollowups(app: Express) {
             : `${lesson.title}\n${tr[body.issueKind]}${body.comment ? "\n" + body.comment : ""}`;
         // The existing notification trigger creates phone outbox jobs in this same transaction.
         await c.query(
-          "INSERT INTO notifications(user_id,title,body) VALUES($1,$2,$3)",
+          "INSERT INTO notifications(user_id,title,body,context) VALUES($1,$2,$3,$4)",
           [
             lesson.student_id,
-            body.kind === "report" ? tr.reportReceived : tr.issueReceived,
+            body.kind === "report" ? 'notify_report' : 'notify_issue',
             message,
+            {kind:body.kind==='report'?'lesson_report':'lesson_issue',lessonId,lessonTitle:lesson.title,
+              startsAt:lesson.starts_at,endsAt:lesson.ends_at,
+              ...(body.kind==='report'?{covered:body.covered,behavior:body.behavior,participation:body.participation,adjustPlan:body.adjustPlan}:{issueKind:body.issueKind}),comment:body.comment},
           ],
         );
         await c.query(

@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
+import { safeLessonReturn } from '@shared/lesson-links';
 import TurnstileWidget, {
   useTurnstileConfig,
 } from "@/components/TurnstileWidget";
@@ -12,6 +13,7 @@ export default function AuthPage() {
   const { t } = useTranslation(),
     { user, loading, login } = useAuth();
   const [, navigate] = useLocation();
+  const returnTo = safeLessonReturn(new URLSearchParams(window.location.search).get('next'));
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [token, setToken] = useState(""),
@@ -19,9 +21,11 @@ export default function AuthPage() {
   const config = useTurnstileConfig();
   const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
-    if (!loading && user)
-      navigate(getDashboardPath(user.role), { replace: true });
-  }, [loading, user, navigate]);
+    if (!loading && user) {
+      if(returnTo)window.location.replace(returnTo);
+      else navigate(getDashboardPath(user.role), { replace: true });
+    }
+  }, [loading, user, navigate, returnTo]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
@@ -34,7 +38,7 @@ export default function AuthPage() {
         String(f.get("password")),
         token,
       );
-      navigate(getDashboardPath(u.role));
+      if(!returnTo)navigate(getDashboardPath(u.role));
     } catch (failure) {
       const reason = failure instanceof Error ? failure.message : "unavailable";
       setError(["credentials","limited","security","network","unavailable","invalid"].includes(reason) ? reason : "unavailable");

@@ -10,6 +10,7 @@ import "./components/academy-review.css";
 import "./components/dashboard-sections.css";
 import "./components/dashboard-finish.css";
 import "./components/experience-finish.css";
+import "./components/lesson-experience.css";
 import "./lib/i18n";
 
 installMutationNotifications();

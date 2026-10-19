@@ -1,3 +1,4 @@
+import { ThemeToggle } from "./ThemeToggle";
 import { Link, useLocation } from "wouter";
 import { Menu, Moon, Sun, Home, BookOpen, Route, Wallet, Newspaper, Info, Mail, ArrowUpRight, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -15,7 +16,7 @@ import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 export function Navbar() {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
   const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [location] = useLocation();
@@ -78,13 +79,7 @@ export function Navbar() {
             </Link>
           ))}
           <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-700 pl-6 rtl:border-l-0 rtl:border-r rtl:pl-0 rtl:pr-6">
-            <button
-              onClick={toggleTheme}
-              aria-label={t("pageUi.Navbar.Toggle_dark_mode")}
-              className="min-h-11 min-w-11 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <ThemeToggle />
             <LanguageSwitcher />
             <Link href={user ? getDashboardPath(user.role) : "/login"}>
               <Button className="btn-primary gap-2">
@@ -97,13 +92,7 @@ export function Navbar() {
 
         {/* Mobile Nav */}
         <div className="xl:hidden flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            aria-label={t("pageUi.Navbar.Toggle_dark_mode")}
-            className="min-h-11 min-w-11 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <ThemeToggle />
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button aria-label={t("p4.menu")} aria-expanded={isOpen} variant="ghost" size="icon" className="min-h-11 min-w-11 hover:bg-primary/5 dark:hover:bg-primary/10">

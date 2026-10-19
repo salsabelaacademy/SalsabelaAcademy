@@ -1,3 +1,4 @@
+import { PageBackdrop } from "@/components/PageBackdrop";
 import {useEffect} from "react";
 import {applyMetadata} from "@/components/Seo";
 import {pageMetadata} from "@shared/seo";
@@ -155,10 +156,10 @@ const courseExtras: Record<string, {
 
 function CourseDetailsSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 animate-pulse">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
-      <main className="pt-32 pb-20">
-        <div className="container-wide">
+      <main className="academy-hero-surface academy-course-detail-hero pt-32 pb-20"><PageBackdrop variant="courseDetail" />
+        <div className="container-wide animate-pulse">
           <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
             <div className="aspect-video bg-slate-200 dark:bg-slate-700 rounded-3xl" />
@@ -231,7 +232,7 @@ export default function CourseDetails() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
 
-      <main className="pt-32 pb-20">
+      <main className="academy-hero-surface academy-course-detail-hero pt-32 pb-20"><PageBackdrop variant="courseDetail" />
         <div className="container-wide">
           <Link href="/courses">
             <Button variant="ghost" className="mb-8 hover:bg-transparent p-0 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors gap-2">
@@ -296,7 +297,7 @@ export default function CourseDetails() {
               </div>
 
               <div className="pt-4 flex flex-wrap gap-4">
-                <Link href={`/contact?tab=trial&course=${encodeURIComponent(course.title)}`}>
+                <Link href={`/apply?course=${encodeURIComponent(String(course.id))}`}>
                   <Button size="lg" variant="outline" className="px-8 h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all">
                     {t("courses.free_trial")}
                   </Button>
@@ -358,7 +359,7 @@ export default function CourseDetails() {
               {t("pageUi.CourseDetails.Your_first_session_is_completely_free_No_credit_card_required")}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href={`/contact?tab=trial&course=${encodeURIComponent(course.title)}`}>
+              <Link href={`/apply?course=${encodeURIComponent(String(course.id))}`}>
                 <Button size="lg" className="bg-white text-primary hover:bg-white/90 h-14 px-8 text-lg font-bold rounded-xl shadow-lg">
                   {t("courses.free_trial")}
                 </Button>

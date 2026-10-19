@@ -1,3 +1,4 @@
+import { registerLessonEntryRoutes } from './lesson-entry';
 import { completeAccountToken } from './account-tokens';
 import {emailErrorCodes} from "./email-errors";
 import {authEmail} from "./email-template";
@@ -123,6 +124,7 @@ export async function registerRoutes(
 
   registerPortalRoutes(app);
   registerIntegrationRoutes(app);
+  registerLessonEntryRoutes(app);
 
   app.get("/api/admin/notifications/status", requireAuth(["admin"]), (_req, res) => {
     res.json(notificationStatus());

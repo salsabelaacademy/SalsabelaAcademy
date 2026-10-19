@@ -1,4 +1,6 @@
+import { safeLessonReturn } from '@shared/lesson-links';
 import {RecurringLessonForm} from '@/components/RecurringLessonForm';
+import {LessonEntryButton} from '@/components/LessonEntryButton';
 import { DashboardRecords, AuditEntry } from '@/components/DashboardRecords';
 import { programLabel } from '@/lib/program-label';
 import { StudentsWorkspace } from '@/components/StudentsWorkspace';
@@ -163,7 +165,10 @@ export default function Dashboard() {
   const reload = () => setRevision((v) => v + 1);
   const {updates, error: updatesError} = useLessonUpdates(revision,Boolean(user));
   useEffect(() => {
-    if (!loading && !user) navigate("/login", { replace: true });
+    if (!loading && !user) {
+      const next = safeLessonReturn(window.location.pathname + window.location.search);
+      navigate("/login" + (next ? "?next=" + encodeURIComponent(next) : ""), { replace: true });
+    }
     else if (user && location !== getDashboardPath(user.role) && !(user.role === 'admin' && location.startsWith('/admin')))
       navigate(getDashboardPath(user.role), { replace: true });
   }, [user, loading, location, navigate]);
@@ -440,6 +445,7 @@ export default function Dashboard() {
                     {tz}
                   </p>
                   <span className="p4-badge">{status(l.status)}</span>
+                  <LessonEntryButton lesson={l} />
                   {admin ? (
                     <>
                       <LessonActions lesson={l} onDone={reload}/>

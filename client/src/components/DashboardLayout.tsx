@@ -67,7 +67,7 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
         })}
       </div>)}
     </nav>
-    <div className="dash-account"><span className="dash-avatar"><AccountAvatar user={user} /></span><div><strong>{user.name}</strong><small>{tr(admin ? 'adminRole' : 'studentRole')}</small></div><button type="button" onClick={onLogout} aria-label={tr('signout')} title={tr('signout')}><LogOut size={19} aria-hidden="true" /></button></div>
+    <div className="dash-account"><button className="dash-account-open" type="button" onClick={()=>select('profile')} aria-label={tr('profile')}><span className="dash-avatar"><AccountAvatar user={user} /></span><span className="dash-account-copy"><strong>{user.name}</strong><small>{tr(admin ? 'adminRole' : 'studentRole')}</small></span></button><button type="button" onClick={onLogout} aria-label={tr('signout')} title={tr('signout')}><LogOut size={19} aria-hidden="true" /></button></div>
   </>;
   return <div className={`dash-root${collapsed ? ' dash-collapsed' : ''}`}>
     <FloatingMessenger open={chatOpen} onOpenChange={value=>{setChatOpen(value);if(value)setNotificationsOpen(false);}} />
@@ -90,7 +90,7 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
         <Dropdown.Item className="account-menu-signout" onSelect={onLogout}><LogOut size={19}/>{tr('signout')}</Dropdown.Item>
       </Dropdown.Content></Dropdown.Portal></Dropdown.Root>
       </div></header>
-      <main id="dashboard-content" className="p4-workspace dash-content" tabIndex={-1}>{children}</main>
+      <main id="dashboard-content" className="p4-workspace dash-content" tabIndex={-1}>{new URLSearchParams(urlSearch).get('join')==='unavailable'&&<p className="lesson-join-notice" role="status">{t('lessonMail.unavailable')}</p>}{children}</main>
       <footer className="dash-footer"><span>{tr('brand')}</span><span>{tr('welcomeNote')}</span></footer>
     </div>
   </div>;
