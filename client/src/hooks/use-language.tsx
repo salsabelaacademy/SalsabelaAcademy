@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, ReactNode } from "react";
 import { Router } from "wouter";
 import { useBrowserLocation } from "wouter/use-browser-location";
 import i18n from "@/lib/i18n";
+import { languageCookie } from "@shared/site-language";
 type Language = "en" | "ar";
 const LanguageContext = createContext<
   | {
@@ -20,6 +21,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   }, [language]);
   function setLanguage(lang: Language) {
+    try { document.cookie = `${languageCookie}=${lang}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`; } catch { /* URL switching still works when cookies are disabled. */ }
     const plain = path.replace(/^\/ar(?=\/|$)/, "") || "/";
     navigate(
       (lang === "ar" ? "/ar" + (plain === "/" ? "" : plain) : plain) +

@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startWorker } from "./integrations/service";
+import { sitePresentation } from "./site-presentation";
 
 validateEnvironment();
 const app = express();
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
+  app.use(sitePresentation);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

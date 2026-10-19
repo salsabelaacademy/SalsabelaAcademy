@@ -1,4 +1,5 @@
 import { FeatureIcon } from "@/components/FeatureIcon";
+import { PageBackdrop } from "@/components/PageBackdrop";
 
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -26,9 +27,8 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/images/home-mosque.webp')] bg-cover bg-center opacity-5 dark:opacity-10"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/50 to-slate-50 dark:from-slate-950/0 dark:via-slate-950/50 dark:to-slate-950"></div>
+      <section className="academy-hero-surface academy-home-hero relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <PageBackdrop variant="home" />
 
         <div className="container-wide relative z-10 max-w-5xl text-center">
           <div data-reveal

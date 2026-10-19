@@ -6,6 +6,7 @@ import {publicPaths,canonicalOrigin,localizedPath,pageMetadata,structuredData} f
 import {renderPublic} from './seo-render';
 import {pool} from './db';
 import sanitizeHtml from 'sanitize-html';
+import {backgroundPreloadHtml} from './site-presentation';
 const esc=(v:string)=>v.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function metadataHtml(m:ReturnType<typeof pageMetadata>){
  const tags=[`<title>${esc(m.title)}</title>`,`<meta name="description" content="${esc(m.description)}">`,`<meta name="robots" content="${m.index?'index,follow':'noindex,nofollow'}">`,`<link rel="canonical" href="${esc(m.url)}">`];
@@ -43,7 +44,7 @@ export function serveStatic(app:Express, directory=path.resolve(typeof __dirname
   const found=publicPaths.includes(plain)||!!data||!!course||privatePage;
   const m=pageMetadata(plain,lang,plain.startsWith('/blog/')?data:undefined,course);
   const body=privatePage?'':await renderPublic(plain,lang,data,catalogue);
-  const html=template.replace(/<html[^>]*>/,`<html lang="${lang}" dir="${lang==='ar'?'rtl':'ltr'}">`).replace(/<title>[\s\S]*?<\/title>/g,'').replace(/<meta\s+(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/g,'').replace('</head>',()=>metadataHtml(m)+'</head>').replace('<div id="root"></div>',()=>`<div id="root">${body}</div>`);
+  const html=template.replace(/<html[^>]*>/,`<html lang="${lang}" dir="${lang==='ar'?'rtl':'ltr'}">`).replace(/<title>[\s\S]*?<\/title>/g,'').replace(/<meta\s+(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/g,'').replace('</head>',()=>metadataHtml(m)+backgroundPreloadHtml(req.path)+'</head>').replace('<div id="root"></div>',()=>`<div id="root">${body}</div>`);
   res.status(found?200:404).set('Cache-Control','no-store').set('X-Robots-Tag',m.index?'index,follow':'noindex,nofollow').type('html').send(html);
  }catch(e){
   let cause:any=e, unavailable=false;

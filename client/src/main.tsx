@@ -1,3 +1,4 @@
+import './lib/browser-entry';
 import {installMutationNotifications} from './lib/mutation-notifications';
 import { createRoot } from "react-dom/client";
 import App from "./App";
@@ -8,6 +9,7 @@ import "./components/dashboard-update.css";
 import "./components/academy-review.css";
 import "./components/dashboard-sections.css";
 import "./components/dashboard-finish.css";
+import "./components/experience-finish.css";
 import "./lib/i18n";
 
 installMutationNotifications();

@@ -232,7 +232,7 @@ export default function Contact() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
 
-      <section className="academy-hero-surface pt-32 pb-20"><PageBackdrop variant="contact" />
+      <section className="academy-hero-surface academy-contact-hero pt-32 pb-20"><PageBackdrop variant="contact" />
         <div className="container-wide">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
 

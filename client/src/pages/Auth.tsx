@@ -3,7 +3,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
-import { DisplayControls } from "@/components/PublicShell";
 import TurnstileWidget, {
   useTurnstileConfig,
 } from "@/components/TurnstileWidget";
@@ -49,7 +48,6 @@ export default function AuthPage() {
     <main className="login-studio">
       <div className="login-studio-controls">
         <Link href="/">{t("p4.home")}</Link>
-        <DisplayControls />
       </div>
       <section className="login-studio-form">
         <div className="academy-auth-existing">

@@ -315,12 +315,18 @@ export function LessonActions({
         <SheetContent
           side={i18n.dir() === "rtl" ? "left" : "right"}
           overlayClassName="academy-detail-overlay"
-          className="academy-detail-sheet"
+          className="academy-detail-sheet lesson-followup-sheet"
           dir={i18n.dir()}
         >
           <SheetHeader className="academy-detail-heading">
+            <span className="followup-heading-icon" aria-hidden="true">
+              {mode === "issue" ? <BellRing size={24} /> : mode === "reschedule" ? <CalendarClock size={24} /> : <ClipboardCheck size={24} />}
+            </span>
             <SheetTitle>{tr(mode || "report")}</SheetTitle>
             <SheetDescription>{lesson.title}</SheetDescription>
+            {lesson.starts_at && Number.isFinite(Date.parse(lesson.starts_at)) && <time className="followup-lesson-time" dateTime={lesson.starts_at}>
+              {new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(new Date(lesson.starts_at))}
+            </time>}
           </SheetHeader>
           <form className="followup-form" onSubmit={submit} key={mode}>
             {mode === "report" && (
@@ -386,6 +392,7 @@ export function LessonActions({
                 <textarea name="comment" maxLength={3000} rows={3} />
               </label>
             )}
+            <div className="followup-form-footer">
             {!["sent", "savedSchedule"].includes(message) && (
               <button className="p4-button" disabled={busy}>
                 {busy
@@ -411,6 +418,7 @@ export function LessonActions({
             {mode !== "reschedule" && (
               <p className="followup-privacy">{tr("phoneHint")}</p>
             )}
+            </div>
           </form>
         </SheetContent>
       </Sheet>

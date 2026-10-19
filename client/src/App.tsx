@@ -29,6 +29,7 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 
 import { useTranslation } from "react-i18next";
+import { preloadPageBackground } from "./lib/browser-entry";
 function RouteReady(){useEffect(()=>{document.documentElement.dataset.appReady="true"},[]);return null}
 function RouteLoading(){useEffect(()=>{document.documentElement.dataset.appReady="false";return()=>{NProgress.done()}},[]);return <BrandLoading/>}
 function RouteError(){const {t}=useTranslation();return <div className="restore-loading" role="alert"><h1>{t('restore.pageError')}</h1><button className="p4-button" onClick={()=>window.location.reload()}>{t('restore.retry')}</button></div>}
@@ -47,6 +48,7 @@ function ScrollToTop() {
 
 function Router() {
   const [location] = useLocation();
+  useEffect(() => { preloadPageBackground(location); }, [location]);
 
 
 

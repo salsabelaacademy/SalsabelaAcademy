@@ -1,0 +1,151 @@
+/* A stable photographic frame: form height must never resize the contact image. */
+.academy-contact-hero > .academy-page-backdrop {
+  height: clamp(480px, 60vw, 650px);
+  max-height: none;
+}
+.academy-home-hero > .academy-page-backdrop {
+  height: 100%;
+  max-height: none;
+  background: transparent;
+  mask-image: linear-gradient(#000 0%, #000 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(#000 0%, #000 45%, transparent 100%);
+}
+.academy-home-hero > .academy-page-backdrop img { opacity: .23; object-position: center 44%; }
+.dark .academy-home-hero > .academy-page-backdrop img { opacity: .32; }
+
+/* Scroll navigation independently; account controls stay at the bottom even on short phones. */
+.dash-sidebar { overflow: hidden; }
+.dash-sidebar > .dash-brand, .dash-drawer > .dash-brand { flex-shrink: 0; }
+.dash-sidebar > .dash-nav, .dash-drawer > .dash-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  scrollbar-width: thin;
+  padding-bottom: 16px;
+}
+.dash-drawer[open] { display: flex; flex-direction: column; overflow: hidden; }
+.dash-sidebar > .dash-account, .dash-drawer > .dash-account {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.dash-drawer { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+
+/* Portalled lesson forms need their own styling rather than dashboard ancestry. */
+.academy-detail-sheet.lesson-followup-sheet {
+  width: min(560px, 100vw) !important;
+  max-width: 560px !important;
+  padding: 28px !important;
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  overscroll-behavior: contain;
+}
+.lesson-followup-sheet .academy-detail-heading {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 22px;
+}
+.followup-heading-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 15px;
+  background: hsl(var(--muted));
+  color: hsl(var(--primary));
+  margin-bottom: 4px;
+}
+.lesson-followup-sheet > button:last-child { display: grid; place-items: center; width: 44px; height: 44px; top: 14px; right: 14px; }
+.lesson-followup-sheet[dir=rtl] > button:last-child { right: auto; left: 14px; }
+.lesson-followup-sheet .followup-lesson-time { color: hsl(var(--muted-foreground)); font-size: 13px; }
+.lesson-followup-sheet .followup-form { display: grid; gap: 22px; }
+.lesson-followup-sheet .followup-form > label { display: grid; gap: 9px; font-size: 14px; font-weight: 600; }
+.lesson-followup-sheet .followup-form small { font-weight: 400; line-height: 1.7; color: hsl(var(--muted-foreground)); }
+.lesson-followup-sheet textarea { width: 100%; min-height: 104px; resize: vertical; line-height: 1.8; font-size: 16px; }
+.lesson-followup-sheet .followup-adjust {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 13px;
+  background: hsl(var(--card));
+}
+.lesson-followup-sheet input[type=checkbox], .lesson-followup-sheet .followup-issues input[type=radio] {
+  appearance: auto;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  flex: none;
+  accent-color: hsl(var(--primary));
+}
+.lesson-followup-sheet fieldset { min-width: 0; }
+.lesson-followup-sheet legend { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.followup-rating > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.followup-rating label { position: relative; min-width: 0; cursor: pointer; }
+.lesson-followup-sheet .followup-rating input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+}
+.followup-rating label > span {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 82px;
+  padding: 12px 3px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--card));
+}
+.followup-rating small { font-size: 11px; text-align: center; overflow-wrap: anywhere; }
+.followup-rating input:checked + span { border-color: #a7853e; background: hsl(var(--muted)); color: #916d24; box-shadow: inset 0 0 0 1px #a7853e; }
+.dark .followup-rating input:checked + span { color: #e1c47e; }
+.followup-rating input:checked + span svg { fill: currentColor; }
+.followup-rating input:checked + span small { color: inherit; }
+.followup-rating input:focus-visible + span { outline: 3px solid hsl(var(--ring)); outline-offset: 3px; }
+.followup-issues { display: grid; gap: 10px; }
+.followup-issues label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 13px 15px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 13px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 1.7;
+  cursor: pointer;
+}
+.followup-issues label:has(input:checked) { border-color: hsl(var(--primary)); background: hsl(var(--muted)); }
+.followup-issues label:focus-within { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.followup-form-footer { display: grid; gap: 12px; padding-top: 20px; border-top: 1px solid hsl(var(--border)); }
+.lesson-followup-sheet .followup-form-footer > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 15px;
+  font-weight: 600;
+}
+.lesson-followup-sheet button:disabled { opacity: .6; cursor: wait; }
+.lesson-followup-sheet .followup-result { color: hsl(var(--foreground)); padding: 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(var(--muted)); }
+.lesson-followup-sheet :focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .academy-detail-sheet.lesson-followup-sheet { padding: 24px 16px !important; }
+}
