@@ -6,13 +6,14 @@ import { requireAuth } from "./auth";
 import { messageFailure } from "./message-diagnostics";
 import { serviceError } from "./service-errors";
 import { aiInput, generateAnswer } from "./gemini";
+import { conversationChanged, conversationEvents } from "./conversation-events";
 const run =
   (fn: RequestHandler): RequestHandler =>
   async (req, res, next) => {
     try {
       await fn(req, res, next);
     } catch (error) {
-      if (req.path.startsWith("/api/conversations")) messageFailure(error,res,res.locals.communicationStage || "conversation_request");
+      if (req.path.startsWith("/api/conversations")) messageFailure(error,res,res.locals.communicationStage || "conversation_request", (req as any).auth?.user?.role === "admin");
       else if (!serviceError(error, res)) next(error);
     }
   };
@@ -37,6 +38,7 @@ const limits = async (key: string, maximum: number, seconds: number) => {
 };
 export function registerConversations(app: Express) {
   const auth = requireAuth(["admin", "student"]);
+  app.get("/api/conversations/events", auth, conversationEvents);
   const recipient = async (actor: any, value: unknown) => {
     const id = z.coerce.number().int().positive().parse(value);
     return (
@@ -54,7 +56,7 @@ export function registerConversations(app: Express) {
         `SELECT u.id,u.name,u.role,u.avatar_url AS "avatarUrl",(SELECT count(*)::int FROM messages m WHERE m.sender_id=u.id AND m.recipient_id=$1 AND m.read_at IS NULL) AS unread, recent.id AS "lastMessageId",recent.body AS "lastMessage",recent.created_at AS "lastMessageAt" FROM users u LEFT JOIN LATERAL (SELECT m.id,m.body,m.created_at FROM messages m WHERE (m.sender_id=u.id AND m.recipient_id=$1) OR (m.sender_id=$1 AND m.recipient_id=u.id) ORDER BY m.id DESC LIMIT 1) recent ON true WHERE u.role=$2 AND u.status='active' ORDER BY recent.created_at DESC NULLS LAST,u.name,u.id`,
         [actor.id, actor.role === "admin" ? "student" : "admin"],
       );
-      res.set("Cache-Control", "no-store").json(result.rows);
+      res.set({"Cache-Control":"no-store","X-Conversation-Updates":"sse-v1"}).json(result.rows);
     }),
   );
   app.get(
@@ -89,10 +91,12 @@ export function registerConversations(app: Express) {
         other = await recipient(actor, req.params.id);
       if (!allowedConversation(actor, other))
         return res.status(403).json({ code: "forbidden" });
+      const throughId = z.number().int().positive().optional().parse(req.body?.throughId);
       await pool.query(
-        "UPDATE messages SET read_at=now() WHERE sender_id=$1 AND recipient_id=$2 AND read_at IS NULL",
-        [other.id, actor.id],
+        "UPDATE messages SET read_at=now() WHERE sender_id=$1 AND recipient_id=$2 AND read_at IS NULL AND ($3::integer IS NULL OR id<=$3)",
+        [other.id, actor.id, throughId ?? null],
       );
+      conversationChanged(other.id, actor.id);
       res.json({ ok: true });
     }),
   );
@@ -123,7 +127,7 @@ export function registerConversations(app: Express) {
         ]);
         const prior = (
           await c.query(
-            "SELECT id,recipient_id,body FROM messages WHERE sender_id=$1 AND request_key=$2",
+            "SELECT id,sender_id,recipient_id,subject,body,read_at,created_at FROM messages WHERE sender_id=$1 AND request_key=$2",
             [actor.id, value.requestKey],
           )
         ).rows[0];
@@ -131,19 +135,21 @@ export function registerConversations(app: Express) {
           await c.query("ROLLBACK");
           if (prior.recipient_id !== other.id || prior.body !== value.body)
             return res.status(409).json({ code: "conflict" });
-          return res.json({ id: prior.id, duplicate: true });
+          return res.json({ ...prior, duplicate: true });
         }
         res.locals.communicationStage="message_insert";
         const message = (
           await c.query(
-            "INSERT INTO messages(sender_id,recipient_id,subject,body,request_key) VALUES($1,$2,$3,$4,$5) RETURNING id",
+            "INSERT INTO messages(sender_id,recipient_id,subject,body,request_key) VALUES($1,$2,$3,$4,$5) RETURNING id,sender_id,recipient_id,subject,body,read_at,created_at",
             [actor.id, other.id, actor.name, value.body, value.requestKey],
           )
         ).rows[0];
+        res.locals.communicationStage="message_commit";
         await c.query("COMMIT");
+        conversationChanged(actor.id, other.id);
         res.status(201).json(message);
       } catch (error) {
-        await c.query("ROLLBACK");
+        await c.query("ROLLBACK").catch(() => {});
         throw error;
       } finally {
         c.release();

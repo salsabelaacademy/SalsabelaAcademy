@@ -1,5 +1,3 @@
-import {ServiceErrorNotice} from "@/components/ServiceErrorNotice";
-import {serviceErrorCodes} from "@/lib/dashboard-api";
 import { programLabel } from '@/lib/program-label';
 import { useCourses } from '@/hooks/use-courses';
 import { api, Panel, type Row } from "@/components/integration-shared";
@@ -30,21 +28,21 @@ export default function Integrations() {
   const [lesson, setLesson] = useState({ studentId: "", programId: "", title: "", startsAt: "", endsAt: "", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [edit, setEdit] = useState<Row | null>(null), [recovery, setRecovery] = useState<Row | null>(null), [zoomId, setZoomId] = useState("");
   const [link, setLink] = useState({ enrollmentId: "", courseId: "" });
+  const [setup, setSetup] = useState<Row | null>(null);
   const [initializing, setInitializing] = useState(true);
   const date = (s?: string) => s ? new Date(s).toLocaleString(i18n.language) : tr("never");
   const errorText = (code: string) => t(`integrations.errors.${code}`, { defaultValue: tr("errors.internal_error") });
   async function reload() {
-    const [c, j, s, d, e, l, mail] = await Promise.all([api("/admin/integrations"), api("/admin/integrations/jobs"), api("/admin/integrations/sessions"), api("/dashboard/admin"), api("/enrollments"), api("/admin/integrations/classroom/links"), api("/admin/notifications/status")]);
-    const {programs}=await api("/portal");
-    setNotification(mail);
-    setConnections(c.filter((v:Row)=>v.provider!=='drive')); setJobs(j); setSessions(s); setStudents(d.users?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog({programs,units:[],materials:[]}); setLinks(l);
+    const [c, j, s, d, e, l, mail, config] = await Promise.all([api("/admin/integrations"), api("/admin/integrations/jobs"), api("/admin/integrations/sessions"), api("/portal"), api("/enrollments"), api("/admin/integrations/classroom/links"), api("/admin/notifications/status"), api("/admin/integrations/setup")]);
+    setNotification(mail); setSetup(config);
+    setConnections(c); setJobs(j); setSessions(s); setStudents(d.people?.filter((u: Row) => u.role === "student") || []); setEnrollments(e); setCatalog({programs: d.programs || [], units: [], materials: []}); setLinks(l);
   }
   useEffect(() => { if (!loading && user?.role !== "admin") navigate(user ? getDashboardPath(user.role) : "/login"); }, [loading, user, navigate]);
   useEffect(() => {
     if (user?.role !== "admin") return;
     void reload().catch(e => setError(e.message)).finally(() => setInitializing(false));
     if (new URLSearchParams(window.location.search).get("oauth") === "error") setNotice("oauthError");
-    const timer = setInterval(() => { if(document.hidden)return;void Promise.all([api("/admin/integrations/jobs"), api("/admin/integrations")]).then(([j, c]) => { setJobs(j); setConnections(c.filter((v:Row)=>v.provider!=='drive')); }).catch(() => {}); }, 15000);
+    const timer = setInterval(() => { void Promise.all([api("/admin/integrations/jobs"), api("/admin/integrations")]).then(([j, c]) => { setJobs(j); setConnections(c); }).catch(() => {}); }, 15000);
     return () => clearInterval(timer);
   }, [user]);
   async function run(fn: () => Promise<any>, queued = false) {
@@ -54,12 +52,18 @@ export default function Integrations() {
   if (loading || user?.role !== "admin" || initializing) return <BrandLoading compact />;
   const programName = (p?: Row) => programLabel(p as {name: string; slug: string} | undefined, i18n.language, publicCourses);
   const enrollmentOptions = enrollments.filter(e => e.status === "active").map(e => <option key={e.id} value={e.id}>#{e.id} — {students.find(s => s.id === e.studentId)?.name || e.studentId} — {programName(catalog.programs.find((p: Row) => p.id === e.programId))}</option>);
-  return <section className="academy-admin-page academy-integration-page min-h-screen bg-slate-50 p-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:p-8">
+  return <section className="min-h-screen bg-slate-50 p-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:p-8">
     <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4"><Link href="/dashboard/admin" className="underline">{tr("back")}</Link><DisplayControls /><Button disabled={busy} onClick={() => run(reload)}>{tr("refresh")}</Button></header>
+      <header className="flex flex-wrap items-center justify-between gap-4"><Link href="/dashboard/admin" className="underline">{tr("back")}</Link><DisplayControls showLanguage={false} /><Button disabled={busy} onClick={() => run(reload)}>{tr("refresh")}</Button></header>
       <div><h1 className="text-3xl font-bold">{tr("title")}</h1><p className="mt-2 text-slate-600 dark:text-slate-300">{tr("subtitle")}</p></div>
-      {error && ((serviceErrorCodes as readonly string[]).includes(error) ? <ServiceErrorNotice error={new Error(error)} retry={() => void run(reload)} /> : <p role="alert" className="rounded-lg border border-red-400 p-4 text-red-700 dark:text-red-300">{errorText(error)}</p>)}
+      {error && <p role="alert" className="rounded-lg border border-red-400 p-4 text-red-700 dark:text-red-300">{errorText(error)}</p>}
       {notice && <p role="status" className="rounded-lg bg-blue-50 p-4 text-blue-950 dark:bg-blue-950 dark:text-blue-100">{tr(notice)}</p>}
+      {setup && <Panel title={tr("googleSetupTitle")}>
+        <p>{tr("googleSetupHint")}</p>
+        {setup.googleCallbackUri ? <><label className="block text-sm font-semibold" htmlFor="google-callback-uri">{tr("googleCallback")}</label><input id="google-callback-uri" className={selectClass} readOnly value={setup.googleCallbackUri} onFocus={e => e.currentTarget.select()} dir="ltr" />
+        {setup.frontendOrigin !== window.location.origin && <p role="alert" className="text-amber-800 dark:text-amber-200">{tr("originMismatch")}</p>}</> : <p role="alert">{tr("invalidOrigin")}</p>}
+        {setup.missingSettings?.length > 0 && <p>{tr("missingSettings")}: <bdi>{setup.missingSettings.join(", ")}</bdi></p>}
+      </Panel>}
       <div className="grid gap-4 md:grid-cols-2">{connections.map(c => <Panel key={c.provider} title={tr(c.provider)}>
         <p className="font-semibold">{tr(c.status)}</p><p className="text-sm">{tr("lastSuccess")}: {date(c.lastSuccess)}</p>
         {!c.configured && <p className="text-sm">{tr("missing")}</p>}{c.error && <p role="alert" className="text-sm">{errorText(c.error)}</p>}
@@ -74,7 +78,7 @@ export default function Integrations() {
         <p className="text-sm">{tr("notificationDomain")}: {notification?.domain || "notifications.salsabela.com"}</p>
         {notification?.sender && <p className="text-sm">{tr("notificationSender")}: {notification.sender}</p>}
         <p className="text-sm">{tr("notificationNote")}</p>
-        <Button disabled={busy || !notification?.configured} onClick={() => run(() => api("/admin/notifications/test", "POST"))}>{tr("notificationTest")}</Button>
+        <Button disabled={busy || !notification?.configured} onClick={() => run(() => api("/admin/notifications/test", "POST", {locale: i18n.language.startsWith("ar") ? "ar" : "en"}))}>{tr("notificationTest")}</Button>
       </Panel>
       <Panel title={tr("createLesson")}><form className="grid gap-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); void run(() => api("/admin/lessons", "POST", { ...lesson, programId: lesson.programId || undefined, startsAt: new Date(lesson.startsAt).toISOString(), endsAt: new Date(lesson.endsAt).toISOString() }), true); }}>
         <Field label={tr("student")}><select required className={selectClass} value={lesson.studentId} onChange={e => setLesson({ ...lesson, studentId: e.target.value })}><option value="">{tr("choose")}</option>{students.filter(s => s.status === "active").map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
@@ -115,6 +119,7 @@ export default function Integrations() {
           <Field label={tr("course")}><select required className={selectClass} value={link.courseId} onChange={e => setLink({ ...link, courseId: e.target.value })}><option value="">{tr("choose")}</option>{courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><Button disabled={busy}>{tr("link")}</Button>
         </form><h3 className="font-semibold">{tr("links")}</h3>{!links.length && <p>{tr("empty")}</p>}{links.map(l => <p key={l.enrollment_id}>#{l.enrollment_id} → {l.course_id} · {tr(l.state)} {l.error && errorText(l.error)}</p>)}
       </Panel>
+
     </div>
   </section>;
 }

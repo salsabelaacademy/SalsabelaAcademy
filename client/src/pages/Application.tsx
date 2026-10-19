@@ -30,7 +30,8 @@ export default function Application({
     [token, setToken] = useState(""),
     [reset, setReset] = useState(0);
   const config = useTurnstileConfig();
-  const {data:courses=[]}=useCourses();
+  const coursesQuery=useCourses();
+  const {data:courses=[]}=coursesQuery;
   const regionNames = new Intl.DisplayNames([language], {type: 'region'});
   const countries = getCountries().map(code => [code, regionNames.of(code) || code]).sort((a,b) => a[1].localeCompare(b[1], language));
   useEffect(()=>{const selected=new URLSearchParams(window.location.search).get('course');const c=courses.find(c=>String(c.id)===selected||c.title===selected);if(c)setForm(f=>f.requestedProgram?f:{...f,requestedProgram:c.title});},[courses]);
@@ -51,7 +52,7 @@ export default function Application({
       ];
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || (!contact && (coursesQuery.isPending || coursesQuery.isError || !courses.length))) return;
     const next: Record<string, string> = {};
     for (const k of fields) if (!form[k]?.trim()) next[k] = "fieldRequired";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
@@ -80,6 +81,7 @@ export default function Application({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          email: form.email.trim(),
           ...(!contact && validatedPhone ? validatedPhone : {}),
           locale: language,
           turnstileToken: token,
@@ -102,6 +104,8 @@ export default function Application({
                 : "failed",
         );
       }
+      const response = await r.json();
+      if (contact ? response?.ok !== true : !Number.isInteger(response?.application?.id)) throw new Error("failed");
       setSent(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed");
@@ -131,6 +135,9 @@ export default function Application({
           </div>
         ) : (
           <form noValidate onSubmit={submit} className="restore-form-panel p4-form-grid">
+            {!contact && <div className="p4-full" role="status">
+              {coursesQuery.isPending ? tr('loading') : coursesQuery.isError ? <>{t('reviewFix.catalogError')} <button type="button" className="p4-button" onClick={() => void coursesQuery.refetch()}>{tr('retry')}</button></> : !courses.length ? t('reviewFix.catalogEmpty') : null}
+            </div>}
             {fields.map((k) => {
               const options =
                 k === "country" ? countries : k === "preferredLanguage"
@@ -237,7 +244,7 @@ export default function Application({
             <button
               className="p4-button p4-full"
               disabled={
-                busy ||
+                busy || (!contact && (coursesQuery.isPending || coursesQuery.isError || !courses.length)) ||
                 !(config?.developmentBypass || (config?.enabled && token))
               }
             >

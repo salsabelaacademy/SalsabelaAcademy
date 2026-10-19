@@ -1,4 +1,3 @@
-import "./prepare-backgrounds";
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
@@ -34,11 +33,13 @@ const allowlist = [
 ];
 
 async function buildAll() {
-  await rm("dist", { recursive: true, force: true, maxRetries: 3, retryDelay: 150 });
+  await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
   await viteBuild();
 
+  const logo = await readFile("dist/public/logo-icon.png");
+  if (!logo.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) throw Error("Email logo missing or invalid in production assets");
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [

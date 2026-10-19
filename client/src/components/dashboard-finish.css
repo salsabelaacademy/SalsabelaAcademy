@@ -1,0 +1,149 @@
+/* Portal sheets live outside .dash-root; own the same surface tokens explicitly. */
+.academy-detail-sheet {--sheet-surface:hsl(var(--card));--sheet-ink:hsl(var(--foreground));--sheet-muted:hsl(var(--muted-foreground));--sheet-border:hsl(var(--border));color:var(--sheet-ink);background:hsl(var(--background));isolation:isolate}
+.academy-detail-sheet>section,.academy-detail-sheet .p4-card {display:grid;gap:16px;padding:22px;margin-block:18px;border:1px solid var(--sheet-border);border-radius:18px;background:var(--sheet-surface);color:var(--sheet-ink)}
+.academy-detail-sheet h3 {font-size:18px;font-weight:700;line-height:1.6;margin:0}
+.academy-detail-sheet p {font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+.academy-detail-sheet .dashboard-action-form {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+.dashboard-action-form>label {display:grid;gap:8px;font-size:14px;min-width:0;text-align:start}
+.dashboard-action-form input,.dashboard-action-form select,.dashboard-action-form textarea {width:100%;min-width:0;min-height:46px}
+.dashboard-action-form>button,.dashboard-action-form>p {grid-column:1/-1;justify-self:start}
+.academy-detail-sheet .student-detail-lesson {display:grid;gap:10px;padding:18px;background:var(--sheet-surface);border:1px solid var(--sheet-border);border-radius:14px;margin-block:12px}
+.academy-detail-sheet .student-course-tags {margin-block:10px}
+.academy-detail-sheet .student-course-tags>span {padding:7px 12px;background:hsl(var(--muted));color:var(--sheet-ink);border-radius:9px;font-size:13px}
+.academy-detail-sheet .p4-badge {display:inline-flex;justify-self:start;padding:5px 11px;border-radius:100px;background:hsl(var(--muted));color:var(--sheet-ink);font-size:12px}
+.academy-detail-sheet .lesson-action-bar {display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
+.academy-detail-sheet .followup-history {display:grid;gap:14px;margin-top:24px}
+.academy-detail-sheet .followup-history-item {display:grid;gap:12px;padding:18px;border:1px solid var(--sheet-border);border-radius:14px;background:var(--sheet-surface)}
+.academy-detail-sheet .followup-scores {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.academy-detail-sheet .followup-scores>span {display:block;border-radius:10px;padding:10px;background:hsl(var(--muted));font-size:14px}
+.academy-detail-sheet .followup-form {display:grid;gap:20px}
+.academy-detail-sheet .followup-form>label {display:grid;gap:8px}
+.academy-detail-sheet .followup-privacy,.academy-detail-sheet .student-record-hint {font-size:13px;color:var(--sheet-muted)}
+.dark .academy-detail-sheet input,.dark .academy-detail-sheet select,.dark .academy-detail-sheet textarea {color-scheme:dark;color:var(--sheet-ink);background:var(--sheet-surface);border-color:var(--sheet-border)}
+body:has(.academy-detail-sheet[data-state=open]) .dashboard-chat-launcher {visibility:hidden;pointer-events:none}
+
+/* Management pages share the dashboard canvas instead of inset black page backgrounds. */
+.dash-embedded>.min-h-screen,.dash-embedded>section {background:transparent!important;padding:0!important}
+.dash-embedded .integration-panel,.dash-blog .rounded-2xl.border {background:var(--dash-surface)!important;color:var(--dash-ink);border-color:var(--dash-border)!important;box-shadow:none}
+.dash-embedded .integration-panel {padding:24px;border-radius:18px}
+.dash-embedded .integration-panel>p {font-size:14px;color:var(--dash-muted);line-height:1.8}
+.dash-embedded .integration-panel label {display:grid;gap:8px;font-size:14px}
+.dash-integrations .integration-panel input,.dash-integrations .integration-panel select {width:100%;min-width:0}
+.dark .dash-embedded .bg-white,.dark .dash-embedded .dark\:bg-slate-900 {background:var(--dash-surface)}
+.dark .dash-embedded .text-slate-900,.dark .dash-embedded .dark\:text-slate-100 {color:var(--dash-ink)}
+
+/* Real preference states: unavailable preferences are not displayed as enabled. */
+.preference-row input[type=checkbox] {appearance:none;width:44px;height:26px;min-height:26px;min-width:44px;padding:0;border:1px solid var(--dash-border);border-radius:100px;background:#bdc6d0;position:relative;cursor:pointer;transition:background .18s ease}
+.preference-row input[type=checkbox]::after {content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0002;transition:transform .18s ease}
+.preference-row input[type=checkbox]:checked {background:#17634f;border-color:#17634f}
+.preference-row input[type=checkbox]:checked::after {transform:translateX(18px)}
+.preference-row input[type=checkbox]:disabled {opacity:.55;cursor:wait}
+.preference-row input[type=checkbox]:focus-visible {outline:3px solid #c4a15a;outline-offset:4px}
+.dark .preference-row input[type=checkbox] {background:#3c4b5d;border-color:#59697c}
+.dark .preference-row input[type=checkbox]:checked {background:#2d8a6b;border-color:#2d8a6b}
+.preference-saved {padding:10px 14px;border-radius:10px;background:var(--dash-bg);color:var(--dash-ink);font-size:14px}
+
+/* Reference-inspired compact messenger: circular launcher, branded home, plain conversation header. */
+.dashboard-chat-launcher {width:50px!important;min-width:50px!important;height:50px!important;padding:0!important;border-radius:50%!important;border:0!important;box-shadow:0 5px 18px #082e3030!important;background:#17634f!important}
+.dashboard-chat-launcher .dashboard-chat-symbol {width:26px;height:26px}
+.academy-messenger {width:min(380px,calc(100vw - 32px));height:min(600px,calc(100dvh - 110px));bottom:88px;inset-inline-end:24px;border-radius:24px;border:1px solid #e4e8ed;box-shadow:0 18px 50px #0a253d30;--messenger-surface:#fff;--messenger-ink:#263747;--messenger-muted:#667788}
+.academy-messenger .messenger-brand-home {padding:26px 24px 38px;min-height:225px;border-radius:0;background:#17634f}
+.academy-messenger .messenger-brand-home h2 {font-size:26px;line-height:1.35;margin-top:30px;font-weight:650;max-width:310px}
+.academy-messenger .messenger-home {padding:18px;min-height:0}
+.academy-messenger .messenger-home-card {min-height:82px;background:#fff;border:1px solid #e6e9ed;box-shadow:0 3px 8px #1625360d;padding:16px 18px;border-radius:13px}
+.academy-messenger .messenger-home-card strong {font-size:15px}
+.academy-messenger .messenger-home-card small {font-size:12px}
+.academy-messenger .messenger-home-note {margin-top:16px}
+.academy-messenger .messenger-tabs {height:76px;min-height:76px;border-top:1px solid #edf0f3;background:#fff;padding-inline:12px}
+.academy-messenger .messenger-tabs>button {border-radius:10px;font-size:12px}
+.academy-messenger:has(.conversation-selected) .messenger-brand,.academy-messenger:has(.conversation-selected) .messenger-tabs {display:none}
+.academy-messenger .conversation-heading {min-height:78px;flex-shrink:0;background:var(--messenger-surface);border-bottom:1px solid var(--workspace-border);padding:10px 14px;gap:9px}
+.academy-messenger .conversation-heading img {width:34px;height:34px;flex:none}
+.academy-messenger .conversation-heading h3 {font-size:15px;font-weight:650}
+.academy-messenger .conversation-heading small {font-size:12px}
+.academy-messenger .conversation-heading .conversation-back,.academy-messenger .conversation-heading .conversation-close,.academy-messenger .conversation-heading .conversation-more {width:44px;height:44px;min-width:44px;display:grid;place-items:center;padding:0;flex:none;border-radius:9px;color:var(--messenger-muted)}
+.academy-messenger .conversation-log {padding:16px;background:var(--messenger-surface)}
+.academy-messenger .chat-bubble {max-width:88%;padding:12px 16px;box-shadow:none;border:0;border-radius:20px;margin-block:12px;font-size:14px}
+.academy-messenger .chat-other {background:#f2f4f5;color:#263747}
+.academy-messenger .chat-own {background:#17634f;color:#fff}
+.academy-messenger .conversation-compose {padding:16px;background:var(--messenger-surface);border-top:0;align-items:end}
+.academy-messenger .conversation-compose textarea {min-height:74px;max-height:160px;resize:vertical;border:1px solid #e3e6eb;border-radius:18px;background:var(--messenger-surface);padding:12px;font-size:15px}
+.academy-messenger .conversation-compose>button {width:42px;height:42px;min-height:42px;min-width:42px;border-radius:50%;margin-bottom:6px}
+.academy-messenger .conversation-workspace {border-radius:0}
+.conversation-message-search {display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--workspace-border);color:var(--messenger-muted);background:var(--messenger-surface)}
+.conversation-message-search input {width:100%;min-width:0;padding:8px;background:transparent;color:var(--messenger-ink);font-size:14px}
+.conversation-message-search button {height:40px;min-width:36px;display:grid;place-items:center}
+.conversation-menu {z-index:160;min-width:230px;max-width:calc(100vw - 24px);padding:8px;border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));color:hsl(var(--foreground));box-shadow:0 12px 40px #071a3030;font-size:14px}
+.conversation-menu [role=menuitem] {display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border-radius:9px;outline:none;cursor:pointer}
+.conversation-menu [data-highlighted] {background:hsl(var(--muted))}
+.conversation-menu [data-disabled] {opacity:.5;cursor:wait}
+.academy-messenger.messenger-expanded {inset:5vh 5vw;width:90vw;max-width:none;height:90dvh;max-height:none}
+.dark .academy-messenger {--messenger-surface:#172331;--messenger-ink:#edf2f7;--messenger-muted:#b6c2cf;border-color:#344454}
+.dark .academy-messenger .conversation-heading,.dark .academy-messenger .conversation-log,.dark .academy-messenger .conversation-compose {background:var(--messenger-surface)}
+.dark .academy-messenger .messenger-home-card {background:#1d2d3e;border-color:#354657}
+.dark .academy-messenger .messenger-tabs {background:#172331;border-color:#344454}
+.dark .academy-messenger .chat-other {background:#25374b;color:#edf2f7}
+.dark .academy-messenger .conversation-compose textarea {background:#172331;border-color:#415064;color:#edf2f7}
+@media(max-width:767px){
+ .academy-detail-sheet .dashboard-action-form,.academy-detail-sheet .followup-scores{grid-template-columns:1fr}
+ .academy-detail-sheet>section,.academy-detail-sheet .p4-card{padding:18px}
+ .dash-embedded .integration-panel{padding:18px}
+ .academy-messenger,.academy-messenger.messenger-expanded{inset:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0}
+ .academy-messenger .conversation-heading{padding-top:max(10px,env(safe-area-inset-top))}
+ .academy-messenger .conversation-compose{padding-bottom:max(16px,env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:reduce){.preference-row input[type=checkbox],.preference-row input[type=checkbox]::after{transition:none}}
+/* The recent-conversation label keeps AA contrast on the dark card. */
+.dark .academy-messenger .messenger-home-card .messenger-recent-copy>small:first-child {color:#8cdec0}
+
+/* Teal and navy echo the academy sidebar, while keeping content surfaces quiet. */
+.academy-notification-inbox {--workspace-surface:#fff;--workspace-soft:#f0f5f6;--workspace-border:#dde6eb;--workspace-ink:#163449;--workspace-muted:#52677b;--workspace-action:#1b5d60;--inbox-accent:#17634f;width:380px;height:570px;border-radius:20px;box-shadow:0 16px 46px #10283b24}
+.dark .academy-notification-inbox {--workspace-surface:#172534;--workspace-soft:#203443;--workspace-border:#344958;--workspace-ink:#edf2f6;--workspace-muted:#b8c8d5;--workspace-action:#286d70;--inbox-accent:#9fd8c8}
+.academy-notification-inbox .notification-inbox-brand,.academy-messenger .messenger-brand {background:linear-gradient(125deg,#17584f 0%,#153d4b 55%,#10283b 100%)}
+.academy-notification-inbox .notification-inbox-brand {padding:16px;gap:10px}
+.academy-notification-inbox .notification-inbox-brand h2 {font-size:18px}
+.academy-notification-inbox .notification-inbox-brand p {color:#d4e5e6;font-size:12px}
+.academy-notification-inbox .notification-inbox-brand button {border:1px solid #ffffff20;border-radius:12px}
+.academy-notification-inbox .notification-center-header {padding:14px 16px 12px}
+.academy-notification-inbox .notification-center-header>.p4-button {background:var(--workspace-action);color:#fff;border:0;border-radius:11px;padding:9px 13px}
+.academy-notification-inbox .notification-tabs {display:flex;gap:8px;padding:0 16px 14px;flex-wrap:wrap}
+.academy-notification-inbox .notification-tabs button {border:1px solid var(--workspace-border);border-radius:11px;color:var(--workspace-muted);background:var(--workspace-surface);padding:8px 12px;min-height:44px;font-size:13px}
+.academy-notification-inbox .notification-tabs [aria-pressed=true] {background:var(--workspace-soft);color:var(--inbox-accent);border-color:var(--inbox-accent)}
+.academy-notification-inbox .notification-tabs b {background:transparent;color:inherit}
+.academy-notification-inbox .notification-feed {display:grid;gap:10px;padding:14px}
+.academy-notification-inbox .notification-card {margin:0;gap:10px;border-radius:14px;padding:14px;background:var(--workspace-surface);color:var(--workspace-ink);box-shadow:0 2px 6px #10283b04}
+.academy-notification-inbox .notification-card.notification-new {background:var(--workspace-soft);border-inline-start:3px solid var(--inbox-accent)}
+.academy-notification-inbox .notification-card h3 {font-size:14px;color:var(--workspace-ink);font-weight:650}
+.academy-notification-inbox .notification-card p,.academy-notification-inbox .notification-card time {color:var(--workspace-muted)}
+.academy-notification-inbox .notification-card-icon {width:38px;height:38px;border-radius:12px;border:1px solid var(--workspace-border);background:var(--workspace-surface);color:var(--inbox-accent)}
+.academy-notification-inbox .notification-dot {background:var(--inbox-accent)}
+.academy-notification-inbox .notification-read {border-radius:10px;color:var(--inbox-accent)}
+.academy-notification-inbox .notification-read:hover {background:var(--workspace-soft)}
+.academy-messenger .messenger-brand-home {min-height:195px;padding:22px 22px 28px}
+.academy-messenger .messenger-brand-home h2 {font-size:24px;margin-top:22px}
+.academy-messenger .messenger-home {padding:16px}
+.academy-messenger .messenger-home-card {border-radius:14px;box-shadow:none;border-color:#dce6e9}
+.academy-messenger .messenger-home-card:hover {border-color:#528d87;background:#f6f9f9}
+.dark .academy-messenger .messenger-home-card:hover {background:#243a49;border-color:#528d87}
+.academy-messenger .messenger-tabs {height:68px;min-height:68px}
+.academy-messenger .messenger-tabs [aria-current=page] {background:#eaf3f2;color:#1b5d60}
+.dark .academy-messenger .messenger-tabs [aria-current=page] {background:#203c48;color:#a0ddcc}
+.academy-messenger .conversation-heading {min-height:76px;border-top:3px solid #25665f}
+.academy-messenger .chat-bubble {border-radius:17px;padding:12px 14px;line-height:1.7}
+.academy-messenger .chat-own {background:linear-gradient(125deg,#17634f,#194e60);color:#fff;border-end-end-radius:5px}
+.dark .academy-messenger .chat-own {background:linear-gradient(125deg,#245d56,#234d63);color:#fff}
+.academy-messenger .chat-other {background:#eef3f5;color:#163449;border-end-start-radius:5px}
+.dark .academy-messenger .chat-other {background:#263b4b;color:#edf2f6}
+.academy-messenger .conversation-compose {padding:14px;gap:10px}
+.academy-messenger .conversation-compose textarea {min-height:64px;border-radius:16px;resize:none;font-size:16px;line-height:1.6}
+.academy-messenger .conversation-compose>button {background:#1b5d60;color:#fff;border:1px solid #ffffff18}
+.academy-messenger .conversation-heading>div {min-width:0;flex:1}
+.academy-messenger .conversation-heading h3 {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:767px){
+ .dash-toolbar .dash-profile {display:inline-grid!important;width:44px;height:44px;min-width:44px;flex:none;border:1px solid var(--dash-border);border-radius:50%;padding:3px;background:var(--dash-surface)}
+ .dash-toolbar .dash-profile .dash-account-image {width:100%;height:100%;border-radius:50%;object-fit:cover}
+ .academy-notification-inbox {inset:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0}
+ .academy-notification-inbox .notification-inbox-brand {padding-top:max(16px,env(safe-area-inset-top))}
+ .academy-notification-inbox .notification-inbox-content {padding-bottom:env(safe-area-inset-bottom)}
+ .academy-messenger .conversation-compose {padding-bottom:max(14px,env(safe-area-inset-bottom))}
+}

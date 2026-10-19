@@ -15,7 +15,7 @@ export function emailReady(env = process.env) {
   }
 }
 export function notificationEmail(row: any, origin: string) {
-  const ar = row.language === "ar",
+  const ar = ["ar", "arabic"].includes(String(row.language).toLowerCase()),
     lang = ar ? "ar" : "en",
     ctx = row.context || {};
   const words: Record<string, string> = ar
@@ -124,7 +124,7 @@ export async function processEmailJob(
   if (!job) return false;
   try {
     const result = await pool.query(
-      `SELECT n.title,n.body,n.context,u.name,u.email,u.role,u.status,COALESCE(a.preferred_language,s.preferred_language,'en') AS language,COALESCE(a.timezone,s.timezone,'UTC') AS timezone,COALESCE(p.email_updates,true) AS enabled FROM notifications n JOIN users u ON u.id=n.user_id LEFT JOIN account_details a ON a.user_id=u.id LEFT JOIN student_profiles s ON s.user_id=u.id LEFT JOIN account_preferences p ON p.user_id=u.id WHERE n.id=$1 AND n.created_at>now()-interval '23 hours'`,
+      `SELECT n.title,n.body,n.context,u.name,u.email,u.role,u.status,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.preferred_language,''),a.preferred_language,'en') ELSE COALESCE(a.preferred_language,'en') END AS language,CASE WHEN u.role='student' THEN COALESCE(NULLIF(s.timezone,''),a.timezone,'UTC') ELSE COALESCE(a.timezone,'UTC') END AS timezone,COALESCE(p.email_updates,true) AS enabled FROM notifications n JOIN users u ON u.id=n.user_id LEFT JOIN account_details a ON a.user_id=u.id LEFT JOIN student_profiles s ON s.user_id=u.id LEFT JOIN account_preferences p ON p.user_id=u.id WHERE n.id=$1 AND n.created_at>now()-interval '23 hours'`,
       [job.notification_id],
     );
     const row = result.rows[0];

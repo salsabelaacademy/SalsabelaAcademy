@@ -1,6 +1,7 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
@@ -13,7 +14,7 @@ import { AccountAvatar } from "./AccountAvatar";
 import { CommunicationIcon } from "./CommunicationIcon";
 import { ServiceErrorNotice } from "./ServiceErrorNotice";
 import { useAuth } from "@/hooks/use-auth";
-import { conversationPeople } from "@/lib/dashboard-api";
+import { conversationPeople, conversationStreamingAvailable } from "@/lib/dashboard-api";
 const Workspace = lazy(() =>
   import("./ConversationWorkspace").then((m) => ({
     default: m.ConversationWorkspace,
@@ -28,9 +29,14 @@ export function FloatingMessenger({
 }) {
   const { t, i18n } = useTranslation(),
     { user } = useAuth();
+  const client = useQueryClient();
   const tr = (key: string, options?: any) =>
     t("messenger." + key, options) as string;
+  const drafts = useRef<Record<string, {text: string; requestKey: string}>>({});
   const [view, setView] = useState<"home" | "messages" | "assistant">("home");
+  const [expanded, setExpanded] = useState(false);
+  const isMobile = useIsMobile();
+  useEffect(() => { if (isMobile) setExpanded(false); }, [isMobile]);
   const [focus, setFocus] = useState<number | undefined>();
   const [recipientId, setRecipientId] = useState<number | undefined>();
   useEffect(() => {
@@ -51,6 +57,18 @@ export function FloatingMessenger({
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
   });
+  useEffect(() => {
+    if (!user || !people.isSuccess || !conversationStreamingAvailable()) return;
+    const stream = new EventSource("/api/conversations/events", { withCredentials: true });
+    const changed = () => {
+      void client.invalidateQueries({ queryKey: ["conversations", user.id] });
+      void client.invalidateQueries({ queryKey: ["conversation", user.id] });
+      window.dispatchEvent(new Event("academy:data-changed"));
+    };
+    stream.addEventListener("changed", changed);
+    // Polling remains as a fallback for proxies and separate application instances.
+    return () => { stream.removeEventListener("changed", changed); stream.close(); };
+  }, [user?.id, client, people.isSuccess]);
   const count = (Array.isArray(people.data) ? people.data : []).reduce(
     (sum, p) => sum + p.unread,
     0,
@@ -66,7 +84,8 @@ export function FloatingMessenger({
           aria-haspopup="dialog"
           aria-controls="academy-messenger-dialog"
         >
-          {open ? <ChevronDown size={25} strokeWidth={2} aria-hidden="true" /> : <CommunicationIcon filled size={26} />}
+          <span className="dashboard-chat-symbol">{open ? <ChevronDown size={25} strokeWidth={2} aria-hidden="true" /> : <CommunicationIcon filled size={26} />}</span>
+
           {count > 0 && <b aria-hidden="true">{count > 99 ? "99+" : count}</b>}
         </button>
       </Dialog.Trigger>
@@ -74,7 +93,11 @@ export function FloatingMessenger({
         <Dialog.Overlay className="communication-overlay" />
         <Dialog.Content
           id="academy-messenger-dialog"
-          className="academy-messenger"
+          className={"academy-messenger" + (expanded ? " messenger-expanded" : "")}
+          onEscapeKeyDown={event => {
+            // Escape dismisses the nested tools menu before the entire conversation.
+            if (document.querySelector('.conversation-menu[data-state="open"]')) event.preventDefault();
+          }}
           dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
         >
           <div
@@ -173,7 +196,7 @@ export function FloatingMessenger({
             </div>
           ) : (
             <Suspense fallback={<p role="status">{t("p4.loading")}</p>}>
-              <Workspace
+              <Workspace drafts={drafts} onClose={() => onOpenChange(false)} onExpand={() => setExpanded(v => !v)} expanded={expanded}
                 key={view}
                 initialAI={view === "assistant"}
                 focusId={focus}

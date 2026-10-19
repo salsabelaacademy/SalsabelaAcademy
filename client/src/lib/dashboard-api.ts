@@ -1,3 +1,5 @@
+let supportsConversationStream = false;
+export const conversationStreamingAvailable = () => supportsConversationStream;
 export const serviceErrorCodes = [
   "schema_update_required",
   "session_expired",
@@ -27,7 +29,6 @@ export async function conversationApi(
     r = await fetch("/api" + path, {
       method,
       credentials: "include",
-      cache: "no-store",
       signal: AbortSignal.timeout(
         path === "/assistant/chat" || path.startsWith("/admin/integrations")
           ? 30000
@@ -54,7 +55,7 @@ export async function conversationApi(
     throw new Error("api_response_invalid");
   }
   if (!r.ok) {
-    const failure = (code:string)=>{const error=new Error(code) as Error & {reference?:string};const ref=r.headers.get("X-Request-ID") || value?.reference;if(typeof ref==="string" && /^[a-f0-9-]{36}$/i.test(ref))error.reference=ref;return error;};
+    const failure = (code:string)=>{const error=new Error(code) as Error & {reference?:string;database?:Record<string,string>};const ref=r.headers.get("X-Request-ID") || value?.reference;if(typeof ref==="string" && /^[a-f0-9-]{36}$/i.test(ref))error.reference=ref;if(value?.database&&typeof value.database==="object")error.database=Object.fromEntries(Object.entries(value.database).filter(([k,v])=>["stage","code","table","column","constraint"].includes(k)&&typeof v==="string"&&/^[a-zA-Z0-9_]{1,80}$/.test(v))) as Record<string,string>;return error;};
     if (r.status === 403 && /origin/i.test(String(value?.message)))
       throw new Error("origin_rejected");
     // Keep provider and resource errors distinct from a missing route or expired session.
@@ -68,6 +69,7 @@ export async function conversationApi(
     if (r.status === 403) throw new Error("request_forbidden");
     throw failure("service_unavailable");
   }
+  if (path === "/conversations") supportsConversationStream = r.headers.get("X-Conversation-Updates") === "sse-v1";
   return value;
 }
 

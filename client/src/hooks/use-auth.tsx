@@ -25,13 +25,15 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function request(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    ...init,
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || "Something went wrong");
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init, credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(15000),
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    });
+  } catch { throw new Error('network'); }
+  const data = await response.json().catch(() => { throw new Error('unavailable'); });
+  if (!response.ok) throw new Error(response.status === 401 ? 'credentials' : response.status === 429 ? 'limited' : response.status === 403 ? 'security' : response.status >= 500 ? 'unavailable' : 'invalid');
   return data;
 }
 
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await request("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       throw new Error("This account type is not supported.");
     }
+    queryClient.clear();
     setUser(data.user);
     return data.user;
   }

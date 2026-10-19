@@ -34,7 +34,7 @@ async function request(path: string, method = "GET", body?: unknown) {
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await r.json().catch(() => ({}));
+  const data = await r.json().catch(() => { throw new Error("failed"); });
   if (!r.ok)
     throw new Error(
       data.code === 'schema_update_required' ? 'schema_update_required' : data.code === 'schedule_conflict'
@@ -83,7 +83,7 @@ function ActionForm({
     }
   }
   return (
-    <form onSubmit={submit}>
+    <form className="dashboard-action-form" onSubmit={submit}>
       {fields.map((f) => (
         <label key={f.key}>
           {tr(f.label || f.key)}
@@ -143,7 +143,7 @@ const studentDashboardSections = ["overview","lessons","programs","attendance","
 const dashboardSections = Array.from(new Set([...adminDashboardSections, ...studentDashboardSections]));
 export default function Dashboard() {
   const { t } = useTranslation(),
-    { language, setLanguage } = useLanguage(),
+    { language } = useLanguage(),
     { user, loading, logout } = useAuth();
   const [location, navigate] = useLocation();
   const search = useSearch();
@@ -179,7 +179,7 @@ export default function Dashboard() {
     if (!user) return;
     let live = true, fetching=false;
     const controller=new AbortController();
-    const refresh=async(initial=false)=>{if(fetching||document.hidden)return;fetching=true;if(initial)setRefreshing(true);try{const r=await fetch('/api/portal',{credentials:'include',signal:controller.signal});if(!r.ok)throw new Error(r.status===401?'expired':'failed');const d=await r.json();if(live){setData(d);setError('');}}catch(e){if(live&&!(e instanceof Error&&e.name==='AbortError'))setError(e instanceof Error?e.message:'failed');}finally{fetching=false;if(live)setRefreshing(false);}};
+    const refresh=async(initial=false)=>{if(fetching||document.hidden)return;fetching=true;if(initial)setRefreshing(true);try{const r=await fetch('/api/portal',{credentials:'include',signal:controller.signal});if(!r.ok)throw new Error(r.status===401?'expired':'failed');const d=await r.json();if(!d || !Array.isArray(d.lessons) || !Array.isArray(d.people) || !Array.isArray(d.notifications) || !d.stats)throw new Error('failed');if(live){setData(d);setError('');}}catch(e){if(live&&!(e instanceof Error&&e.name==='AbortError'))setError(e instanceof Error?e.message:'failed');}finally{fetching=false;if(live)setRefreshing(false);}};
     void refresh(true);
     const timer=setInterval(()=>void refresh(),10000);
     const foreground=()=>{if(!document.hidden)void refresh();};

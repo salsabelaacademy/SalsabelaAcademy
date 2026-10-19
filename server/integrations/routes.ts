@@ -2,6 +2,8 @@ import { Router, type Express, type Request } from "express";
 import { z } from "zod";
 import { followupTranslations } from '../../shared/lesson-followup';
 import { pool } from "../db";
+import { serviceError } from "../service-errors";
+import { safeDatabaseIssue } from "../message-diagnostics";
 import { requireAuth, type AuthUser } from "../auth";
 import { configured, decrypt, digest, driveId, frontendOrigin, IntegrationError, safeZoomUrl, validTimezone } from "./security";
 import { google, inspectDrive, request, zoom, zoomToken, type GoogleProvider } from "./providers";
@@ -30,6 +32,15 @@ export function registerIntegrationRoutes(app: Express) {
       await withLock(() => oauthFinish(state, code, auth(req).user.id, auth(req).token));
       res.redirect("/admin/integrations?oauth=connected");
     } catch { res.redirect("/admin/integrations?oauth=error"); }
+  });
+  router.get("/admin/integrations/setup", requireAuth(["admin"]), (_req, res) => {
+    let origin: string | null = null;
+    try { origin = frontendOrigin(); } catch { /* Report invalid configuration without secrets. */ }
+    res.set("Cache-Control", "no-store").json({
+      frontendOrigin: origin,
+      googleCallbackUri: origin ? `${origin}/api/integrations/google/callback` : null,
+      missingSettings: ["FRONTEND_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "INTEGRATION_ENCRYPTION_KEY"].filter(name => !process.env[name]?.trim()),
+    });
   });
   router.get("/admin/integrations", requireAuth(["admin"]), async (_req, res) => res.json((await statuses()).filter(c=>c.provider!=='drive')));
   router.post("/admin/integrations/:provider/connect", requireAuth(["admin"]), async (req, res) => {
@@ -202,6 +213,7 @@ export function registerIntegrationRoutes(app: Express) {
   router.use((error: unknown, _req: Request, res: import("express").Response, _next: import("express").NextFunction) => {
     if (error instanceof z.ZodError) return res.status(400).json({ code: "invalid_input", message: "Invalid input" });
     if (error instanceof IntegrationError) return res.status(error.status >= 400 && error.status <= 599 ? error.status : 502).json({ code: error.code, message: error.code });
-    res.status(500).json({ code: "internal_error", message: "Operation failed" });
+    console.error(JSON.stringify({event:"integration_request_failed",requestId:res.locals.requestId,...safeDatabaseIssue(error,"integration_request")}));
+    if (!serviceError(error, res)) res.status(500).json({ code: "internal_error", message: "Operation failed" });
   });
 }

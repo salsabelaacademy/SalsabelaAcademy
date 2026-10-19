@@ -526,9 +526,9 @@ export function registerPortalRoutes(app: Express) {
           publicName: text.max(200),
           contactEmail: z.union([z.literal(""), z.string().email().max(254)]),
         })
-        .parse(req.body);
+        .strict().parse(req.body);
       await rows(
-        "UPDATE academy_settings SET public_name=$1,contact_email=$2,updated_at=now() WHERE id=1",
+        "INSERT INTO academy_settings(id,public_name,contact_email) VALUES(1,$1,$2) ON CONFLICT(id) DO UPDATE SET public_name=EXCLUDED.public_name,contact_email=EXCLUDED.contact_email,updated_at=now() RETURNING id",
         [v.publicName, v.contactEmail],
       );
       res.json({ ok: true });

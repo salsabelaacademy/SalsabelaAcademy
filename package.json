@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "NODE_ENV=development node --env-file-if-exists=.env --import tsx server/index.ts",
+    "dev": "node script/dev.mjs",
     "build": "node --import tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
@@ -21,15 +21,15 @@
     "verify": "npm run check && npm run lint && npm run build",
     "db:migrate:home": "node --env-file-if-exists=.env --import tsx script/apply-home-content.ts",
     "db:migrate:push": "node --env-file-if-exists=.env --import tsx script/apply-push.ts",
-    "predev": "node --import tsx script/prepare-backgrounds.ts",
-    "images:prepare": "node --import tsx script/prepare-backgrounds.ts",
     "db:migrate:followup": "node --env-file-if-exists=.env --import tsx script/apply-followup.ts",
     "db:migrate:account": "node --env-file-if-exists=.env --import tsx script/apply-account-details.ts",
-    "db:migrate:dashboard": "node --env-file-if-exists=.env --import tsx script/apply-dashboard-communication.ts",
+    "db:migrate:communication": "node --env-file-if-exists=.env --import tsx script/apply-dashboard-communication.ts",
     "db:migrate:email": "node --env-file-if-exists=.env --import tsx script/apply-email-preferences.ts",
-    "db:migrate:single-report": "node --env-file-if-exists=.env --import tsx script/apply-single-report.ts",
-    "dashboard:diagnose": "node --env-file-if-exists=.env --import tsx script/check-dashboard.ts",
-    "api:check": "node --import tsx script/check-runtime.ts"
+    "db:migrate:reports": "node --env-file-if-exists=.env --import tsx script/apply-single-report.ts",
+    "services:check": "node --env-file-if-exists=.env --import tsx script/check-dashboard.ts",
+    "messages:check": "node --env-file-if-exists=.env --import tsx script/check-message-storage.ts",
+    "messages:repair-sequences": "node --env-file-if-exists=.env --import tsx script/check-message-storage.ts --repair-sequences",
+    "db:migrate:email-integrity": "node --env-file-if-exists=.env --import tsx script/apply-email-integrity.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -76,11 +76,11 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "compression": "^1.8.2",
-    "dompurify": "^3.4.15",
+    "dompurify": "^3.4.17",
     "drizzle-orm": "^0.45.3",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
-    "express": "^5.2.1",
+    "express": "^5.0.1",
     "framer-motion": "^11.18.2",
     "helmet": "^8.3.0",
     "i18next": "^25.8.13",
@@ -89,7 +89,6 @@
     "lucide-react": "^0.453.0",
     "nprogress": "^0.2.0",
     "pg": "^8.16.3",
-    "proxy-addr": "^2.0.8",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -137,7 +136,8 @@
   "overrides": {
     "drizzle-kit": {
       "@esbuild-kit/esm-loader": "npm:tsx@^4.20.4"
-    }
+    },
+    "proxy-addr": "2.0.8"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

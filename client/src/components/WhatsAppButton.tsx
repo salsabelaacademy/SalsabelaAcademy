@@ -1,13 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useLanguage } from "@/hooks/use-language";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const WHATSAPP_NUMBER = "201152741590";
 
 export function WhatsAppButton() {
-  const { t } = useTranslation();
-  const reducedMotion = useReducedMotion();
+  const {t}=useTranslation();
   const { isRTL } = useLanguage();
   const [hovered, setHovered] = useState(false);
 
@@ -23,11 +22,14 @@ export function WhatsAppButton() {
       aria-label={t("review.whatsapp")}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      whileHover={reducedMotion ? undefined : { scale: 1.05 }}
-      whileTap={reducedMotion ? undefined : { scale: 0.95 }}
-      className={`public-whatsapp fixed bottom-6 ${isRTL ? "left-6" : "right-6"} z-50 flex items-center gap-0 cursor-pointer`}
-      style={{ direction: "ltr" }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`fixed bottom-6 ${isRTL ? "left-6" : "right-6"} z-50 flex items-center gap-0 cursor-pointer`}
+      data-testid="public-whatsapp" style={{ direction: "ltr" }}
     >
+      {/* A restrained native brand control; no continuous animation. */}
+
+
       {/* Label that expands on hover */}
       <AnimatePresence>
         {hovered && (
@@ -36,7 +38,7 @@ export function WhatsAppButton() {
             animate={{ opacity: 1, width: "auto", marginRight: 10 }}
             exit={{ opacity: 0, width: 0, marginRight: 0 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="max-w-[calc(100vw-110px)] overflow-hidden whitespace-nowrap bg-white dark:bg-slate-800 text-[#25D366] font-bold text-sm px-3.5 py-2 rounded-full shadow-lg border border-[#25D366]/20"
+            className="overflow-hidden whitespace-nowrap bg-white dark:bg-slate-800 text-[#25D366] font-bold text-sm px-3.5 py-2 rounded-full shadow-lg border border-[#25D366]/20"
           >
             {t("review.chatWithUs")}
           </motion.span>

@@ -10,6 +10,8 @@ import TurnstileWidget, { useTurnstileConfig } from "@/components/TurnstileWidge
 async function post(path: string, body: unknown) {
   const response = await fetch(path, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!response.ok) throw new Error(response.status === 429 ? "limited" : "failed");
+  const result = await response.json().catch(() => null);
+  if (!result || (result.ok !== true && typeof result.message !== "string")) throw new Error("failed");
 }
 export default function AccountFlow({ mode }: { mode: "forgot" | "reset" | "invite" | "verify" | "password" | "resend" }) {
   const [, navigate] = useLocation();

@@ -1,5 +1,5 @@
-import { PageBackdrop } from "@/components/PageBackdrop";
 import { FeatureIcon } from "@/components/FeatureIcon";
+import { PageBackdrop } from "@/components/PageBackdrop";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,7 @@ export default function About() {
   const { isRTL } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero */}
@@ -26,13 +26,13 @@ export default function About() {
                 <span>{t("pageUi.About.Direct_One_on_One_Learning")}</span>
               </div>
               <h1 className="text-4xl lg:text-5xl font-display font-bold text-slate-900 dark:text-slate-100 mb-4 leading-tight">
-                {t("polish.aboutTitle")}
+                {t("about.title")}
               </h1>
               <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-                {t("polish.aboutSubtitle")}
+                {t("about.subtitle")}
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link href="/contact?tab=trial">
+                <Link href="/apply">
                   <Button className="btn-primary h-12 px-6">
                     {t("pageUi.About.Book_Free_Trial")}
                   </Button>
@@ -71,19 +71,19 @@ export default function About() {
       </section>
 
       {/* Academy Description */}
-      <section className="py-20 bg-slate-50 dark:bg-slate-950">
+      <section className="py-20 bg-background">
         <div className="container-wide">
           <div className="max-w-3xl mx-auto">
             <div className="text-center">
               <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {t("about.academy_name")}
               </h2>
-              <p className="text-primary font-semibold mb-6">{t("polish.aboutTagline")}</p>
+              <p className="text-primary font-semibold mb-6">{t("about.academy_tagline")}</p>
               <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed mb-6">
-                {t("polish.aboutIntro")}
+                {t("about.academy_intro")}
               </p>
               <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
-                {t("polish.aboutMission")}
+                {t("about.mission_desc_2")}
               </p>
             </div>
 
@@ -96,7 +96,7 @@ export default function About() {
         <div className="container-wide">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-slate-100 mb-4">
-              {t("polish.methodTitle")}
+              {t("about.method_title")}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,10 +113,10 @@ export default function About() {
                 <FeatureIcon name={(["book-half", "person-video3", "calendar2-week", "journal-bookmark-fill"] as const)[i]} compact />
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
-                    {t(`polish.${m.k}_title`)}
+                    {t(`about.${m.k}_title`)}
                   </h3>
                   <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                    {t(`polish.${m.k}_desc`)}
+                    {t(`about.${m.k}_desc`)}
                   </p>
                 </div>
               </div>

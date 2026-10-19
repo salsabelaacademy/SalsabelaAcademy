@@ -2,22 +2,32 @@ import type { Express, Response } from "express";
 import { randomUUID } from "node:crypto";
 import { pool } from "./db";
 import { requireAuth } from "./auth";
-import { serviceError } from "./service-errors";
+import { databaseError, serviceError, safeDatabaseIssue } from "./service-errors";
 
-const safeCodes = new Set([
-  "42P01", "42703", "42501", "23502", "23503", "23505", "42883", "57014",
-  "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "57P01", "53300",
-]);
+export { safeDatabaseIssue } from "./service-errors";
 
-export function messageFailure(error: unknown, res: Response, stage: string) {
-  const code = (error as { code?: string })?.code || "unclassified";
+/** Read-only structural checks. Existence alone does not prove a transaction can commit. */
+export async function inspectMessageSchema() {
+  const columns = (await pool.query("SELECT column_name,is_nullable,column_default,is_identity FROM information_schema.columns WHERE table_schema='public' AND table_name='messages'")).rows;
+  const inserted = ["sender_id", "recipient_id", "subject", "body", "request_key"];
+  const requiredColumns = [...inserted, "id", "created_at", "read_at"];
+  const missingColumns = requiredColumns.filter(name => !columns.some(c => c.column_name === name));
+  const unexpectedRequiredColumns = columns.filter(c => c.is_nullable === "NO" && c.column_default == null && c.is_identity !== "YES" && !inserted.includes(c.column_name)).map(c => c.column_name);
+  const triggers = (await pool.query("SELECT t.tgname AS name,t.tgenabled AS enabled,p.proname AS function FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid WHERE n.nspname='public' AND c.relname='messages' AND NOT t.tgisinternal ORDER BY t.tgname")).rows;
+  return { missingColumns, unexpectedRequiredColumns, triggers, structureReady: missingColumns.length === 0 && unexpectedRequiredColumns.length === 0, storageTested: false };
+}
+
+export function messageFailure(error: unknown, res: Response, stage: string, admin = false) {
+  const code = databaseError(error).code || "unclassified";
   const reference = res.locals.requestId || randomUUID();
   res.locals.requestId = reference;
-  console.error(JSON.stringify({
-    event: "conversation_failure", requestId: reference, stage,
-    code: safeCodes.has(code) ? code : "unclassified",
-  }));
+  const database = safeDatabaseIssue(error, stage);
+  console.error(JSON.stringify({ event: "conversation_failure", requestId: reference, ...database }));
   res.setHeader("X-Request-ID", reference);
+  // Only the academy owner receives identifier-only diagnostics. No SQL, values or raw errors.
+  if (admin && (database.code !== "unclassified" || stage === "message_insert")) {
+    return res.status(503).json({ code: ["42P01", "42703"].includes(code) ? "schema_update_required" : "message_storage_error", reference, database });
+  }
   if (!serviceError(error, res)) {
     res.status(503).json({ code: "message_storage_error", reference });
   }
@@ -74,7 +84,7 @@ export function registerMessageDiagnostics(app: Express) {
       });
     } catch (error) {
       if (c) await c.query("ROLLBACK").catch(() => {});
-      messageFailure(error, res, stage);
+      messageFailure(error, res, stage, true);
     } finally {
       c?.release();
     }

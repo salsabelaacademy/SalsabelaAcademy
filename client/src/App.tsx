@@ -1,6 +1,6 @@
-import {pageBackground} from '@shared/page-background';
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { PageMotion } from "@/components/PageMotion";
-import { BrandLoading, MobileLanguageTransition } from "@/components/BrandLoading";
+import { BrandLoading } from "@/components/BrandLoading";
 import { Switch, Route, useLocation } from "wouter";
 import { useEffect, lazy, Suspense, Component, type ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
@@ -11,7 +11,6 @@ import { LanguageProvider } from "@/hooks/use-language";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
-const WhatsAppButton = lazy(() => import("@/components/WhatsAppButton").then(m => ({default:m.WhatsAppButton})));
 const Articles = lazy(() => import("@/pages/Blog"));
 const Article = lazy(() => import("@/pages/BlogPost"));
 const Home = lazy(() => import('@/pages/Home'));
@@ -37,7 +36,6 @@ class PageBoundary extends Component<{children:ReactNode},{failed:boolean}>{stat
 
 NProgress.configure({ showSpinner: false, speed: 350, minimum: 0.1, barSelector: ".bar", template: '<div class="bar" aria-hidden="true"><div class="peg"></div></div>' });
 
-function BackgroundPriority(){const [location]=useLocation();useEffect(()=>{const src=pageBackground(location);let link=document.head.querySelector<HTMLLinkElement>('link[data-background-priority]');if(!src){link?.remove();return;}if(!link){link=document.createElement('link');link.dataset.backgroundPriority='';link.rel='preload';link.as='image';document.head.append(link);}link.href=src;link.setAttribute('fetchpriority','high');},[location]);return null;}
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
@@ -55,7 +53,8 @@ function Router() {
 
   return (
     <>
-      <ScrollToTop /><Seo /><BackgroundPriority />{!/^\/(?:admin|dashboard|account)(?:\/|$)/.test(location)&&<Suspense fallback={null}><WhatsAppButton/></Suspense>}
+      <ScrollToTop /><Seo />
+      {!/^\/(?:ar\/)?(?:dashboard|admin)(?:\/|$)/.test(location) && <WhatsAppButton />}
 
         <PageBoundary key={/^\/(admin|dashboard)(\/|$)/.test(location) ? 'workspace' : location}><Suspense fallback={<RouteLoading/>}><PageMotion><Switch>
           <Route path="/">
@@ -128,7 +127,7 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <TooltipProvider>
-              <Toaster /><MobileLanguageTransition />
+              <Toaster />
               <Router />
             </TooltipProvider>
           </AuthProvider>

@@ -29,10 +29,11 @@ export function AccountPreferences() {
     refetchIntervalInBackground: false,
   });
   const [retryEmpty, setRetryEmpty] = useState(false);
-  const [email, setEmail] = useState(true),
+  const [email, setEmail] = useState<boolean | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<string>(""),
     [loaded, setLoaded] = useState(false);
+  const [preferenceRetry, setPreferenceRetry] = useState(0), [saved, setSaved] = useState(false);
   const [compact, setCompact] = useState(() => {
     try {
       return localStorage.getItem("academy-compact") === "true";
@@ -49,6 +50,7 @@ export function AccountPreferences() {
   });
   useEffect(() => {
     const c = new AbortController();
+    setLoaded(false); setEmail(null); setError("");
     conversationApi("/portal/preferences")
       .then((v) => {
         if (c.signal.aborted) return;
@@ -62,7 +64,7 @@ export function AccountPreferences() {
           setError(e instanceof Error ? e.message : "service_unavailable");
       });
     return () => c.abort();
-  }, [user?.id]);
+  }, [user?.id, preferenceRetry]);
   useEffect(() => {
     document.documentElement.classList.toggle("academy-compact", compact);
     document.documentElement.classList.toggle("academy-reduced-motion", motion);
@@ -73,12 +75,13 @@ export function AccountPreferences() {
   }, [compact, motion]);
   async function updateEmail(value: boolean) {
     setBusy(true);
-    setError("");
+    setError(""); setSaved(false);
     try {
-      await conversationApi("/portal/preferences", "PATCH", {
+      const response = await conversationApi("/portal/preferences", "PATCH", {
         emailUpdates: value,
       });
-      setEmail(value);
+      if (response?.ok !== true || response.emailUpdates !== value) throw Error("api_response_invalid");
+      setEmail(response.emailUpdates); setSaved(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "service_unavailable");
     } finally {
@@ -129,19 +132,21 @@ export function AccountPreferences() {
           {tr("updates")}
         </h2>
         <p>{tr("emailHint")}</p>
-        <label className="preference-row">
+        {loaded && <label className="preference-row">
           <span>
             <ShieldCheck size={20} />
             <strong>{tr("email")}</strong>
           </span>
           <input
             type="checkbox"
-            checked={email}
+            checked={email === true} name="emailUpdates"
             disabled={busy || !loaded}
             onChange={(e) => void updateEmail(e.target.checked)}
           />
-        </label>
-        {error && <ServiceErrorNotice error={new Error(error)} />}
+        </label>}
+        {!loaded && !error && <p role="status">{t("p4.loading")}</p>}
+        {saved && <p className="preference-saved" role="status">{t("dashboardUpdate.saved")}</p>}
+        {error && <ServiceErrorNotice error={new Error(error)} retry={!loaded ? () => setPreferenceRetry(v => v + 1) : undefined} />}
         <p className="dash-muted">{tr("security")}</p>
       </section>
       <PushPreferences />

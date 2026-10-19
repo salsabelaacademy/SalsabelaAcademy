@@ -1,4 +1,5 @@
 import { serviceError } from "./service-errors";
+import { safeDatabaseIssue } from "./message-diagnostics";
 import { emailReady } from "./email-delivery";
 import type { Express } from "express";
 import { z } from "zod";
@@ -53,6 +54,7 @@ export function registerAccountPreferences(app: Express) {
       );
       res.json({ emailUpdates: rows[0]?.email_updates ?? true });
     } catch (e) {
+      console.error(JSON.stringify({ event: "preferences_failure", ...safeDatabaseIssue(e, "read") }));
       if (!serviceError(e, res)) next(e);
     }
   });
@@ -62,14 +64,15 @@ export function registerAccountPreferences(app: Express) {
         .object({ emailUpdates: z.boolean() })
         .strict()
         .parse(req.body);
-      await pool.query(
-        "INSERT INTO account_preferences(user_id,email_updates) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET email_updates=$2,updated_at=now()",
+      const result = await pool.query(
+        "INSERT INTO account_preferences(user_id,email_updates) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET email_updates=$2,updated_at=now() RETURNING email_updates",
         [(req as any).auth.user.id, value.emailUpdates],
       );
-      res.json({ ok: true });
+      res.json({ ok: true, emailUpdates: result.rows[0].email_updates });
     } catch (e) {
       if (e instanceof z.ZodError)
         return res.status(400).json({ code: "validation" });
+      console.error(JSON.stringify({ event: "preferences_failure", ...safeDatabaseIssue(e, "write") }));
       if (!serviceError(e, res)) next(e);
     }
   });

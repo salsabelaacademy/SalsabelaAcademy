@@ -1,5 +1,5 @@
 export const integrationTranslations = {
-  en: {
+  en: {"googleSetupTitle":"Google connection setup","googleSetupHint":"Register this exact address under Authorized redirect URIs in the Google OAuth web client used by this server. This address is not a secret.","googleCallback":"Authorized redirect URI","originMismatch":"This browser is using a different origin from FRONTEND_URL. Open the academy at FRONTEND_URL, or set it to this preview origin and register the matching callback before connecting Google.","invalidOrigin":"FRONTEND_URL must be a valid HTTPS academy origin.","missingSettings":"Missing server settings",
     title: "Integrations & live lessons", subtitle: "Manage academy connections, lessons, and private resources.", back: "Back to dashboard",
     zoom: "Zoom", calendar: "Google Calendar", classroom: "Google Classroom", drive: "Google Drive",
     notificationTitle: "Academy email (Resend)", notificationDomain: "Sending domain", notificationSender: "Sender", notificationTest: "Send a real test email", notificationNote: "The test is sent to your signed-in admin email. Domain verification alone does not enable sending; add RESEND_API_KEY and RESEND_FROM to server secrets.", configured: "Configured",
@@ -21,13 +21,7 @@ export const integrationTranslations = {
     resources: "My private Drive resources", open: "Open resource", oauthError: "Google connection did not complete. Retry connecting; if it persists, check configuration.",
     recover: "Recover uncertain Zoom creation", zoomId: "Existing Zoom meeting ID", recoverNote: "Use only the meeting already created for this session. The server verifies its exact academy marker; it never creates a replacement.",
     errors: {
-      internal_error: "Operation failed. Check server configuration and migrations.", invalid_input: "Check the entered values and try again.", not_configured: "This integration is not configured or connected.",
-      email_credentials: "Resend rejected the API key. Check the key in the server environment.",
-      email_permission: "The Resend key does not have permission to send from this domain.",
-      email_sender: "Resend rejected the sender address. Check RESEND_FROM.",
-      email_validation: "Resend rejected the email request. Check the verified domain, sender, recipient and account restrictions.",
-      email_quota: "The Resend account has reached its daily or monthly email limit.",
-      email_rate_limited: "Resend requests are temporarily rate limited. Try again later.",
+      schema_update_required: "A required database table or column is missing. Review the matching migration before retrying.", database_unavailable: "The database connection is unavailable. Check the running server and database service.", internal_error: "Operation failed. Check server configuration and migrations.", invalid_input: "Check the entered values and try again.", not_configured: "This integration is not configured or connected.",
       email_delivery_failed: "Resend did not accept the test email. Check your sender, verified domain, and account status.",
       permission_denied: "Permission denied. Check account access and OAuth scopes.", credentials_revoked: "Credentials are expired or revoked. Reconnect the service.",
       oauth_state_invalid: "The connection request expired. Start again.", encryption_missing: "The encryption key is missing or invalid.", encryption_error: "Stored credentials cannot be decrypted. Check the encryption key.", origin_missing: "FRONTEND_URL is missing or invalid.",
@@ -39,7 +33,7 @@ export const integrationTranslations = {
       classroom_link_exists: "This enrollment is already linked to another course. Review the existing Classroom membership first.", revoke_remote_required: "Disconnected locally. Remove this app from your Google account permissions to complete remote revocation.", busy: "Another operation is running. Try again shortly.",
     },
   },
-  ar: {
+  ar: {"googleSetupTitle":"إعداد اتصال Google","googleSetupHint":"أضف هذا العنوان حرفيًا ضمن Authorized redirect URIs في عميل OAuth من نوع Web application المستخدم في الخادم. هذا العنوان ليس مفتاحًا سريًا.","googleCallback":"عنوان إعادة التوجيه المصرّح به","originMismatch":"عنوان المتصفح مختلف عن FRONTEND_URL. افتح الأكاديمية على العنوان المحدد فيه، أو اضبطه على عنوان المعاينة وأضف رابط العودة المطابق قبل ربط Google.","invalidOrigin":"اضبط FRONTEND_URL على عنوان HTTPS صحيح للأكاديمية.","missingSettings":"إعدادات خادم ناقصة",
     title: "التكاملات والدروس المباشرة", subtitle: "إدارة اتصالات الأكاديمية ودروسها ومواردها الخاصة.", back: "العودة إلى لوحة التحكم",
     zoom: "Zoom", calendar: "تقويم Google", classroom: "Google Classroom", drive: "Google Drive",
     notificationTitle: "بريد الأكاديمية (Resend)", notificationDomain: "نطاق الإرسال", notificationSender: "عنوان المرسل", notificationTest: "إرسال رسالة اختبار حقيقية", notificationNote: "تُرسل الرسالة إلى بريد حساب المدير الذي سجلت دخوله. توثيق النطاق وحده لا يكفي للإرسال؛ أضف RESEND_API_KEY وRESEND_FROM إلى أسرار الخادم.", configured: "مُهيّأ",
@@ -61,13 +55,7 @@ export const integrationTranslations = {
     resources: "مواردي الخاصة في Drive", open: "فتح المورد", oauthError: "لم يكتمل ربط Google. أعد المحاولة، ثم راجع الإعدادات إذا استمرت المشكلة.",
     recover: "استعادة اجتماع Zoom غير المؤكد", zoomId: "رقم اجتماع Zoom الموجود", recoverNote: "أدخل رقم الاجتماع الذي أُنشئ بالفعل لهذا الموعد. يتحقق الخادم من علامته الخاصة بالأكاديمية ولا ينشئ اجتماعًا بديلًا.",
     errors: {
-      internal_error: "تعذرت العملية. راجع إعدادات الخادم وترحيلات قاعدة البيانات.", invalid_input: "راجع القيم المدخلة وحاول مجددًا.", not_configured: "لم تُهيّأ هذه الخدمة أو لم يتم ربطها.",
-      email_credentials: "رفض Resend مفتاح API. راجع المفتاح في بيئة الخادم.",
-      email_permission: "مفتاح Resend لا يملك صلاحية الإرسال من هذا النطاق.",
-      email_sender: "رفض Resend عنوان المرسل. راجع RESEND_FROM.",
-      email_validation: "رفض Resend بيانات رسالة البريد. راجع توثيق النطاق وعنوان المرسل والمستلم وقيود الحساب.",
-      email_quota: "وصل حساب Resend إلى حد إرسال البريد اليومي أو الشهري.",
-      email_rate_limited: "أوقف Resend الطلبات مؤقتًا بسبب كثرتها. حاول لاحقًا.",
+      schema_update_required: "جدول أو عمود مطلوب غير موجود. راجع الترحيل المناسب قبل إعادة المحاولة.", database_unavailable: "تعذر الاتصال بقاعدة البيانات. راجع الخادم وخدمة قاعدة البيانات.", internal_error: "تعذرت العملية. راجع إعدادات الخادم وترحيلات قاعدة البيانات.", invalid_input: "راجع القيم المدخلة وحاول مجددًا.", not_configured: "لم تُهيّأ هذه الخدمة أو لم يتم ربطها.",
       email_delivery_failed: "لم يقبل Resend رسالة الاختبار. راجع عنوان المرسل وتوثيق النطاق وحالة الحساب.",
       permission_denied: "الوصول مرفوض. راجع صلاحيات الحساب ونطاقات OAuth.", credentials_revoked: "انتهت صلاحية بيانات الاتصال أو أُلغيت. أعد ربط الخدمة.",
       oauth_state_invalid: "انتهت صلاحية طلب الربط. ابدأ من جديد.", encryption_missing: "مفتاح التشفير مفقود أو غير صالح.", encryption_error: "تعذر فك تشفير بيانات الاتصال. راجع مفتاح التشفير.", origin_missing: "إعداد FRONTEND_URL مفقود أو غير صالح.",

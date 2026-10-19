@@ -54,9 +54,18 @@ export function DashboardShell({ admin, user, tab, tabs, unread, notifications, 
   const select = (key: string) => { if(key==="messages"||key==="notifications"){setChatOpen(key==="messages");setNotificationsOpen(key==="notifications");dialog.current?.close();setQuickOpen(false);return;}  if(key==='blog'||key==='integrations')navigate(key==='blog'?'/admin':'/admin/integrations');else onTab(key); dialog.current?.close(); setNotificationsOpen(false);setQuickOpen(false); };
   const navigation = <>
     <Link href="/" className="dash-brand"><img src="/logo-icon.png" width="48" height="48" alt={tr('brand')} /><span>{tr('brand')}<small>{tr(admin ? 'adminRole' : 'studentRole')}</small></span></Link>
-    <p className="dash-nav-label">{tr('workspaceLabel')}</p>
-    <nav aria-label={tr('menu')} className="dash-nav">{tabs.map(key => { const Icon = icons[key]; return <button type="button" key={key} title={tr(key)} aria-label={tr(key)} aria-current={tab === key ? 'page' : undefined} onClick={() => select(key)}><Icon size={19} aria-hidden="true" /><span>{tr(key)}</span>{key === 'notifications' && unread > 0 && <span className="dash-count">{unread}</span>}</button>; })}
-      {admin && <><Link href="/admin/integrations" onClick={() => dialog.current?.close()} aria-current={tab === "integrations" ? "page" : undefined} title={tr('integrations')} aria-label={tr('integrations')}><Plug size={19} aria-hidden="true" /><span>{tr('integrations')}</span></Link><Link href="/admin" onClick={() => dialog.current?.close()} aria-current={tab === "blog" ? "page" : undefined} title={tr('blog')} aria-label={tr('blog')}><FileText size={19} aria-hidden="true" /><span>{tr('blog')}</span></Link></>}
+    <nav aria-label={tr('menu')} className="dash-nav">
+      {[
+        {label: 'learningGroup', keys: tabs.filter(k => !['contactInbox','audit','settings','profile'].includes(k))},
+        {label: 'academyGroup', keys: [...tabs.filter(k => ['contactInbox','audit'].includes(k)), ...(admin ? ['integrations','blog'] : [])]},
+        {label: 'accountGroup', keys: tabs.filter(k => ['profile','settings'].includes(k))},
+      ].filter(group => group.keys.length).map(group => <div className="dash-nav-group" key={group.label}>
+        <p className="dash-group-label">{t('reviewFix.' + group.label)}</p>
+        {group.keys.map(key => {
+          const Icon = key === 'integrations' ? Plug : key === 'blog' ? FileText : icons[key];
+          return <button type="button" key={key} title={tr(key)} aria-label={tr(key)} aria-current={tab === key ? 'page' : undefined} onClick={() => select(key)}><Icon size={19} aria-hidden="true" /><span>{tr(key)}</span></button>;
+        })}
+      </div>)}
     </nav>
     <div className="dash-account"><span className="dash-avatar"><AccountAvatar user={user} /></span><div><strong>{user.name}</strong><small>{tr(admin ? 'adminRole' : 'studentRole')}</small></div><button type="button" onClick={onLogout} aria-label={tr('signout')} title={tr('signout')}><LogOut size={19} aria-hidden="true" /></button></div>
   </>;
@@ -94,7 +103,7 @@ export function DashboardOverview({admin, user, data, timezone, refreshKey, onTa
   const tr = (key: string) => t('p4.' + key);
   const Arrow = language === 'ar' ? ChevronLeft : ChevronRight;
   const primary = admin ? ['activeStudents', 'newApplications', 'upcomingLessons', 'upcomingAssessments'] : ['upcomingLessons', 'attendanceSummary', 'attendanceRate', 'unreadMessages'];
-  const upcoming = data.lessons.filter((l: any) => l.status === 'scheduled' && new Date(l.starts_at) > new Date()).sort((a: any, b: any) => +new Date(a.starts_at) - +new Date(b.starts_at)).slice(0, 5);
+  const upcoming = data.lessons.filter((l: any) => l.status === 'scheduled' && new Date(l.ends_at) > new Date()).sort((a: any, b: any) => +new Date(a.starts_at) - +new Date(b.starts_at)).slice(0, 5);
   const number = (key: string, value: unknown) => value == null ? tr('noData') : new Intl.NumberFormat(language).format(Number(value)) + (key === 'attendanceRate' ? '%' : '');
   const statIcons = [Users, ClipboardList, CalendarDays, Clock3];
   const today = new Intl.DateTimeFormat(language, {day: 'numeric', month: 'long', year: 'numeric', timeZone: timezone}).format(new Date());
@@ -106,7 +115,7 @@ export function DashboardOverview({admin, user, data, timezone, refreshKey, onTa
         <p className="dash-zone"><Clock3 size={14} aria-hidden="true" /><bdi>{timezone}</bdi></p>
         <div className="dash-schedule">{upcoming.map((lesson: any) => <button key={lesson.id} className="dash-lesson" onClick={() => onTab('lessons')} aria-label={`${tr('openSchedule')}: ${lesson.title}`}><span className="dash-date-tile"><strong>{new Intl.DateTimeFormat(language, {day:'numeric',timeZone:timezone}).format(new Date(lesson.starts_at))}</strong><span>{new Intl.DateTimeFormat(language, {month:'short',timeZone:timezone}).format(new Date(lesson.starts_at))}</span></span><span className="dash-lesson-info"><span className="dash-status">{t('p4.states.' + lesson.status)}</span><strong>{lesson.title}</strong>{admin && <span>{data.people?.find((p: any) => p.id === lesson.student_id)?.name}</span>}</span><span className="dash-lesson-time"><strong>{new Intl.DateTimeFormat(language, {hour:'numeric',minute:'2-digit',timeZone:timezone}).format(new Date(lesson.starts_at))}</strong><span>{new Intl.DateTimeFormat(language, {weekday:'long',timeZone:timezone}).format(new Date(lesson.starts_at))}</span></span><Arrow size={18} aria-hidden="true" /></button>)}{!upcoming.length && <div className="dash-empty"><CalendarDays size={32} aria-hidden="true" /><p>{tr('scheduleEmpty')}</p></div>}</div>
       </section>
-      <section className="dash-panel"><div className="dash-section-heading"><h2>{tr('recentMessages')}</h2><button className="dash-text-button" onClick={() => window.dispatchEvent(new Event('academy:open-chat'))}>{tr('viewAll')}<Arrow size={17} aria-hidden="true" /></button></div>{data.messages.slice(0, 3).map((message: any) => <button key={message.id} className="dash-message" onClick={() => window.dispatchEvent(new Event('academy:open-chat'))}><span className="dash-message-icon"><Mail size={20} aria-hidden="true" /></span><span><strong>{message.subject}</strong><span>{message.body}</span></span><Arrow size={18} aria-hidden="true" /></button>)}{!data.messages.length && <p className="dash-muted">{tr('empty')}</p>}</section>
+      <section className="dash-panel"><div className="dash-section-heading"><h2>{tr('recentMessages')}</h2><button className="dash-text-button" onClick={() => window.dispatchEvent(new Event('academy:open-chat'))}>{tr('viewAll')}<Arrow size={17} aria-hidden="true" /></button></div>{data.messages.slice(0, 3).map((message: any) => <button key={message.id} className="dash-message" onClick={() => window.dispatchEvent(new CustomEvent('academy:open-chat', {detail: message.id}))}><span className="dash-message-icon"><Mail size={20} aria-hidden="true" /></span><span><strong>{message.subject}</strong><span>{message.body}</span></span><Arrow size={18} aria-hidden="true" /></button>)}{!data.messages.length && <p className="dash-muted">{tr('empty')}</p>}</section>
       {!admin && <section className="dash-panel dash-live"><h2>{tr('resourcesTitle')}</h2><StudentLiveResources timezone={timezone} refreshKey={refreshKey} /></section>}
     </div><aside className="dash-overview-aside">
       <LessonCompletion lessons={data.lessons} attendance={data.attendance} timezone={timezone} admin={admin} onOpen={()=>onTab('lessons')} onAttendance={()=>onTab('attendance')} />

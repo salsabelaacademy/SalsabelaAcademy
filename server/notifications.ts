@@ -27,6 +27,7 @@ export async function sendNotificationTest(
   to: string,
   env = process.env,
   sender?: Send,
+  language: "ar" | "en" = "en",
 ) {
   if (!notificationStatus(env).configured) throw new Error("not_configured");
   const send =
@@ -35,12 +36,13 @@ export async function sendNotificationTest(
   const result = await send({
     from: env.RESEND_FROM!,
     to,
-    subject: "Salsabela Academy — Email test / اختبار البريد",
+    subject: language === "ar" ? "أكاديمية سلسبيلا — اختبار البريد" : "Salsabela Academy — Email test",
     ...brandedEmail(
       {
-        title: "Email test / اختبار البريد",
-        body: "Salsabela Academy email delivery test.\nرسالة اختبار لإرسال البريد من أكاديمية سلسبيلا.",
-        url: (env.FRONTEND_URL || "https://salsabela.com") + "/dashboard/admin",
+        title: language === "ar" ? "اختبار البريد" : "Email test",
+        language,
+        body: language === "ar" ? "هذه رسالة اختبار لإرسال البريد من أكاديمية سلسبيلا." : "This is an email delivery test from Salsabela Academy.",
+        url: (env.FRONTEND_URL || "https://salsabela.com") + (language === "ar" ? "/ar" : "") + "/dashboard/admin",
       },
       env.FRONTEND_URL || "https://salsabela.com",
     ),

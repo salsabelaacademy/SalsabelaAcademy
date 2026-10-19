@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 export function escapeEmail(value: unknown) {
   return String(value ?? "").replace(
     /[&<>"']/g,
@@ -16,6 +18,16 @@ export type EmailContent = {
   button?: string;
   details?: { label: string; value: string }[];
 };
+let embeddedLogo: string | undefined;
+function logoAttachment() {
+  if (!embeddedLogo) {
+    const file = resolve(process.cwd(), process.env.NODE_ENV === "production" ? "dist/public/logo-icon.png" : "client/public/logo-icon.png");
+    const bytes = readFileSync(file);
+    if (!bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) throw Error("email_logo_invalid");
+    embeddedLogo = bytes.toString("base64");
+  }
+  return { filename: "salsabela-logo.png", content: embeddedLogo, contentId: "salsabela-logo" };
+}
 export function brandedEmail(value: EmailContent, origin: string) {
   const ar = value.language === "ar",
     e = escapeEmail;
@@ -38,8 +50,11 @@ export function brandedEmail(value: EmailContent, origin: string) {
     value.url,
     "info@salsabela.com",
   ].join("\n\n");
-  const html = `<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${ar ? "rtl" : "ltr"}"><body style="margin:0;background:#f1f4f2;color:#173442;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #e0e8e2;border-radius:18px;overflow:hidden"><tr><td align="center" style="background:#123e3b;padding:28px;color:#fff"><img src="${e(base.origin + "/logo-icon.png")}" width="72" height="72" alt="Salsabela Academy" style="display:block;margin:0 auto 12px"><strong style="font-size:23px">Salsabela Academy</strong><p style="color:#d9ba72;margin:8px 0 0">${ar ? "رحلتك مع القرآن والعربية" : "Your journey with Qur’an and Arabic"}</p></td></tr><tr><td style="padding:32px 28px;text-align:${ar ? "right" : "left"}"><h1 style="font-size:24px;line-height:1.5;margin:0 0 20px">${e(value.title)}</h1><p style="font-size:16px;line-height:1.8">${greeting}${value.name ? " " + e(value.name) : ""},</p><p style="font-size:16px;line-height:1.9;white-space:pre-line">${e(value.body)}</p>${value.details?.length ? '<table role="presentation" width="100%" style="background:#f3f7f5;border-radius:12px;padding:14px">' + value.details.map((d) => `<tr><td style="padding:8px;font-size:14px;color:#607467">${e(d.label)}</td><td style="padding:8px;font-size:15px;font-weight:bold">${e(d.value)}</td></tr>`).join("") + "</table>" : ""}<p style="text-align:center;margin:28px 0"><a href="${e(url.href)}" style="display:inline-block;background:#21644f;color:#fff;text-decoration:none;padding:15px 26px;border-radius:8px;font-size:16px;font-weight:bold">${e(value.button || (ar ? "افتح لوحة الأكاديمية" : "Open academy dashboard"))}</a></p><p style="font-size:12px;line-height:1.8;color:#66786c">${ar ? "إذا لم يعمل الزر، انسخ هذا الرابط في المتصفح:" : "If the button does not work, copy this link into your browser:"}<br><a href="${e(url.href)}" style="color:#21644f;word-break:break-all">${e(url.href)}</a></p></td></tr><tr><td align="center" style="padding:24px;background:#f6f7f3;font-size:13px;color:#52665d;line-height:1.8">${footer}: <a href="mailto:info@salsabela.com" style="color:#21644f">info@salsabela.com</a><br><a href="mailto:salsabela.academy@gmail.com" style="color:#21644f">salsabela.academy@gmail.com</a></td></tr></table></td></tr></table></body></html>`;
-  return { html, text };
+  const font = ar ? "Tahoma, 'Segoe UI', Arial, sans-serif" : "'Segoe UI', Arial, Helvetica, sans-serif";
+  const brand = ar ? "أكاديمية سلسبيلا" : "Salsabela Academy";
+  const paragraphs = value.body.split(/\n\s*\n/).map(line => `<p style="margin:0 0 18px;font-size:16px;line-height:1.9">${e(line).replace(/\n/g,"<br>")}</p>`).join("");
+  const html = `<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${ar ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f6f7;color:#233747;font-family:${font}"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #dfe6e8;border-top:4px solid #1b5d60"><tr><td style="padding:28px 28px 24px;border-bottom:1px solid #e6ecee"><table role="presentation" width="100%"><tr><td width="68"><img src="cid:salsabela-logo" width="56" height="56" alt="${brand}" style="display:block;width:56px;height:56px;object-fit:contain"></td><td style="text-align:${ar ? "right" : "left"};padding-inline-start:12px"><strong style="font-size:20px;font-weight:600;color:#173e48">${brand}</strong><br><span style="font-size:13px;color:#6a7a84;line-height:1.8">${ar ? "القرآن الكريم واللغة العربية" : "Qur’an and Arabic learning"}</span></td></tr></table></td></tr><tr><td style="padding:30px 28px;text-align:${ar ? "right" : "left"};direction:${ar ? "rtl" : "ltr"}"><h1 style="font-size:23px;line-height:1.6;font-weight:600;margin:0 0 22px;color:#173e48">${e(value.title)}</h1><p style="font-size:16px;line-height:1.9;margin:0 0 18px">${greeting}${value.name ? " " + e(value.name) : ""}${ar ? "،" : ","}</p>${paragraphs}${value.details?.length ? '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;border-top:1px solid #e6ecee">' + value.details.map(d=>`<tr><td style="padding:12px 0;border-bottom:1px solid #e6ecee;font-size:14px;color:#687b88">${e(d.label)}</td><td style="padding:12px 8px;border-bottom:1px solid #e6ecee;font-size:15px;color:#233747">${e(d.value)}</td></tr>`).join("")+'</table>' : ""}<p style="margin:28px 0"><a href="${e(url.href)}" style="display:inline-block;background:#1b5d60;color:#fff;text-decoration:none;padding:13px 22px;border-radius:5px;font-size:15px;font-weight:600;line-height:1.5">${e(value.button || (ar ? "افتح لوحة الأكاديمية" : "Open academy dashboard"))}</a></p><p style="font-size:12px;line-height:1.8;color:#6a7a84;margin:0">${ar ? "إذا لم يعمل الزر، افتح الرابط التالي:" : "If the button does not work, open this link:"}<br><a href="${e(url.href)}" style="color:#1b5d60;word-break:break-all;overflow-wrap:anywhere">${e(url.href)}</a></p></td></tr><tr><td style="padding:20px 28px;border-top:1px solid #e6ecee;text-align:${ar ? "right" : "left"};font-size:13px;color:#6a7a84;line-height:1.9">${footer}<br><a href="mailto:info@salsabela.com" style="color:#1b5d60;text-decoration:none">info@salsabela.com</a><br><a href="mailto:salsabela.academy@gmail.com" style="color:#1b5d60;text-decoration:none">salsabela.academy@gmail.com</a></td></tr></table></td></tr></table></body></html>`;
+  return { html, text, attachments: [logoAttachment()] };
 }
 export function authEmail(path: string, token: string, origin: string) {
   const url = new URL(path);

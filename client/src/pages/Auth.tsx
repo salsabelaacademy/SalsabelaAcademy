@@ -14,7 +14,7 @@ export default function AuthPage() {
     { user, loading, login } = useAuth();
   const [, navigate] = useLocation();
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState(false),
+    [error, setError] = useState(""),
     [token, setToken] = useState(""),
     [reset, setReset] = useState(0);
   const config = useTurnstileConfig();
@@ -27,7 +27,7 @@ export default function AuthPage() {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    setError(false);
+    setError("");
     const f = new FormData(e.currentTarget);
     try {
       const u = await login(
@@ -36,8 +36,9 @@ export default function AuthPage() {
         token,
       );
       navigate(getDashboardPath(u.role));
-    } catch {
-      setError(true);
+    } catch (failure) {
+      const reason = failure instanceof Error ? failure.message : "unavailable";
+      setError(["credentials","limited","security","network","unavailable","invalid"].includes(reason) ? reason : "unavailable");
       setToken("");
       setReset((v) => v + 1);
     } finally {
@@ -116,7 +117,7 @@ export default function AuthPage() {
             </div>
             {error && (
               <p role="alert" className="p4-error p4-full">
-                {t("p4.failed")}
+                {t("reviewFix.login." + error)}
               </p>
             )}
             <button

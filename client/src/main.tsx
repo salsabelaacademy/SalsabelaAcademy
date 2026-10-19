@@ -5,6 +5,9 @@ import "./index.css";
 import "./components/refinement.css";
 import "./components/polish.css";
 import "./components/dashboard-update.css";
+import "./components/academy-review.css";
+import "./components/dashboard-sections.css";
+import "./components/dashboard-finish.css";
 import "./lib/i18n";
 
 installMutationNotifications();

@@ -92,6 +92,13 @@
       "when": 1791502000000,
       "tag": "0012_single_lesson_report",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792429388379,
+      "tag": "0013_email_outbox_integrity",
+      "breakpoints": true
     }
   ]
 }

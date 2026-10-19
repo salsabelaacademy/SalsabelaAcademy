@@ -1,0 +1,67 @@
+/* Focused refinements: preserve existing page content and responsive navigation. */
+.dash-nav-group{display:grid;gap:5px;margin-bottom:16px}
+.dash-group-label{font-size:12px;font-weight:600;color:#bacfc9;padding:10px 14px 4px;letter-spacing:.02em}
+.dash-nav button{border-radius:12px;min-height:46px;transition:background .18s,color .18s}
+.dash-nav [aria-current=page]::before{content:"";position:absolute;inset-inline-start:0;top:12px;bottom:12px;width:3px;border-radius:4px;background:#17634f}
+.dash-collapsed .dash-sidebar .dash-group-label{display:none}
+.dash-collapsed .dash-sidebar .dash-nav-group+.dash-nav-group{border-top:1px solid #ffffff20;padding-top:14px}
+.dash-topbar{position:sticky;top:0;z-index:25}
+.dash-section-heading{flex-wrap:wrap;gap:12px}
+.dash-stat-card{border-radius:18px}
+.dash-stat-card:focus-visible,.dash-nav button:focus-visible{outline:3px solid #bc9656;outline-offset:3px}
+.academy-messenger,.academy-notification-inbox{font-family:system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"}
+.messenger-home-card h3{font-size:15px;line-height:1.5}
+.messenger-home-card p{font-size:13px;line-height:1.7}
+.chat-bubble p{font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+.chat-receipt{display:block;font-size:12px;opacity:.8;margin-top:4px}
+.conversation-compose textarea{border-radius:14px;min-height:48px}
+.conversation-compose button{min-width:44px;min-height:44px;border-radius:12px}
+.dark .conversation-main,.dark .conversation-log{background:#14202f}
+.dark .chat-other{background:#233347;color:#eaf0f6}
+.dark .chat-own{background:#27443f;color:#f4faf7}
+.dash-drawer{padding-bottom:max(28px,env(safe-area-inset-bottom));scrollbar-width:thin}
+@media(prefers-reduced-motion:no-preference){.dash-stat-card:hover{transform:translateY(-2px);transition:transform .18s ease}}
+@media(prefers-reduced-motion:reduce){.dash-nav button,.dash-stat-card{transition:none}}
+
+/* Fade the photograph into the page itself, rather than a separately colored hero. */
+.academy-hero-surface {background:transparent!important;border-bottom:0!important}
+.academy-hero-surface>.academy-page-backdrop {height:100%;max-height:none;background:transparent;mask-image:linear-gradient(#000 0%,#000 42%,transparent 100%);-webkit-mask-image:linear-gradient(#000 0%,#000 42%,transparent 100%)}
+.academy-hero-surface>.academy-page-backdrop img {opacity:.13}
+.dark .academy-hero-surface>.academy-page-backdrop img {opacity:.23}
+.academy-course-main>.academy-page-backdrop {max-height:780px}
+
+/* The completion SVG needs an explicit stroke: SVG otherwise defaults to a black fill. */
+.dash-completion {text-align:start;min-width:0}
+.dash-completion-open {display:grid;place-items:center;width:100%;padding:24px 12px 18px;border-radius:16px}
+.dash-completion-open:focus-visible {outline:3px solid var(--dash-gold,#c5a661);outline-offset:2px}
+.dash-completion-ring {position:relative;width:184px;height:184px;max-width:100%;aspect-ratio:1}
+.dash-completion-ring svg {display:block;width:100%;height:100%;overflow:visible}
+.dash-completion-ring circle {fill:none;stroke-width:11}
+.dash-ring-track {stroke:var(--dash-border,hsl(var(--border)))}
+.dash-ring-value {stroke:#24775e;stroke-linecap:round}
+.dark .dash-ring-value {stroke:#75c6a7}
+.dash-completion-ring>span {position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;pointer-events:none}
+.dash-completion-ring strong {font-size:34px;font-weight:750;line-height:1.2;color:var(--dash-ink,hsl(var(--foreground)))}
+.dash-completion-ring small {font-size:14px;color:var(--dash-muted,hsl(var(--muted-foreground)))}
+.dash-ring-legend {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 8px}
+.dash-ring-legend>div {display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--dash-bg,hsl(var(--muted)));border-radius:12px;padding:12px}
+.dash-ring-legend dt {font-size:13px;color:var(--dash-muted,hsl(var(--muted-foreground)))}
+.dash-ring-legend dd {font-size:18px;font-weight:700}
+
+/* Launcher lives outside the dialog and must own its color variables. */
+.dashboard-chat-launcher {--messenger-green:#17634f;--messenger-gold:#c5a661;background:#17634f!important;color:#fff;border:2px solid #f7f8ef;display:grid;place-items:center}
+.dashboard-chat-launcher>svg {width:27px;height:27px;flex:none}
+.academy-messenger {--messenger-surface:#fff;--messenger-ink:#193449;--messenger-muted:#607487;border-color:#dce4eb}
+.dark .academy-messenger {--messenger-surface:#111c2b;--messenger-ink:#edf2f7;--messenger-muted:#afbed0;--messenger-green-soft:#233447;border-color:#314257;background:#111c2b}
+.dark .academy-messenger .conversation-workspace {--workspace-border:#314257;--workspace-soft:#1b2b3d}
+.dark .academy-messenger .conversation-main,.dark .academy-messenger .conversation-log {background:#111c2b}
+.dark .academy-messenger .messenger-home-card {background:#1b2b3d;border-color:#314257}
+.dark .academy-messenger .messenger-tabs {background:#111c2b;border-color:#314257}
+.academy-messenger .messenger-home-card {min-height:82px}
+.academy-messenger .messenger-home {margin:0;padding-top:18px}
+.dark .academy-messenger .messenger-tabs [aria-current=page] {color:#8cdec0;background:#233447}
+.dark .academy-messenger .messenger-home-card>svg {color:#99d4bd}
+.service-diagnostic code,.integration-callback {overflow-wrap:anywhere;word-break:break-word}
+.service-diagnostic .diagnostic-detail {display:block;margin:8px 0;font-size:13px;white-space:pre-wrap;direction:ltr;text-align:start}
+.service-diagnostic .diagnostic-warning {color:#995b10}.dark .service-diagnostic .diagnostic-warning {color:#f2cc83}
+@media(max-width:600px){.dash-completion-ring{width:170px;height:170px}}

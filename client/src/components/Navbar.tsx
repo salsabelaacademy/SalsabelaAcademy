@@ -67,6 +67,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
+              aria-current={location === link.href || (link.href === "/courses" && location.startsWith("/courses/")) ? "page" : undefined}
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 location === link.href
                   ? "text-primary font-semibold"
@@ -80,7 +81,7 @@ export function Navbar() {
             <button
               onClick={toggleTheme}
               aria-label={t("pageUi.Navbar.Toggle_dark_mode")}
-              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="min-h-11 min-w-11 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -99,13 +100,13 @@ export function Navbar() {
           <button
             onClick={toggleTheme}
             aria-label={t("pageUi.Navbar.Toggle_dark_mode")}
-            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="min-h-11 min-w-11 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button aria-label={t("p4.menu")} variant="ghost" size="icon" className="hover:bg-primary/5 dark:hover:bg-primary/10">
+              <Button aria-label={t("p4.menu")} aria-expanded={isOpen} variant="ghost" size="icon" className="min-h-11 min-w-11 hover:bg-primary/5 dark:hover:bg-primary/10">
                 <Menu className="w-6 h-6 text-slate-700 dark:text-slate-300" />
               </Button>
             </SheetTrigger>

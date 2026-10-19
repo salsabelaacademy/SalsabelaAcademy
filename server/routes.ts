@@ -1,3 +1,4 @@
+import { completeAccountToken } from './account-tokens';
 import {emailErrorCodes} from "./email-errors";
 import {authEmail} from "./email-template";
 import { isSupportedCountry, validateCountryPhone } from '../shared/phone';
@@ -11,7 +12,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { Resend } from "resend";
 import sanitizeHtml from "sanitize-html";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { programs, curriculumModules, curriculumUnits, materials, assignedMaterials, progress, enrollments } from "@shared/schema";
 import { eq, and, notInArray, desc } from "drizzle-orm";
 import { registerIntegrationRoutes, checkScheduleConflict } from "./integrations/routes";
@@ -50,7 +51,14 @@ async function sendAuthLink(to: string, subject: string, path: string, token: st
     if (process.env.NODE_ENV === "production") throw new Error("RESEND_API_KEY and RESEND_FROM are required in production");
     return false;
   }
-  const result = await new Resend(process.env.RESEND_API_KEY).emails.send({ from: process.env.RESEND_FROM, to, ...authEmail(path,token,new URL(path).origin) });
+  const recipient = await storage.getUserByEmail(to);
+  const target = new URL(path);
+  if (recipient) {
+    const {rows:[profile]} = await pool.query("SELECT CASE WHEN u.role='student' THEN COALESCE(s.preferred_language,a.preferred_language,'en') ELSE COALESCE(a.preferred_language,'en') END AS language FROM users u LEFT JOIN student_profiles s ON s.user_id=u.id LEFT JOIN account_details a ON a.user_id=u.id WHERE u.id=$1",[recipient.id]);
+    const plain = target.pathname.replace(/^\/ar(?=\/|$)/, "");
+    target.pathname = ["ar","arabic"].includes(String(profile?.language).toLowerCase()) ? "/ar"+plain : plain;
+  }
+  const result = await new Resend(process.env.RESEND_API_KEY).emails.send({ from: process.env.RESEND_FROM, to, ...authEmail(target.href,token,target.origin) });
   if (result.error || !result.data?.id) throw new Error("Email delivery failed");
   return true;
 }
@@ -123,8 +131,10 @@ export async function registerRoutes(
     const current = (req as any).auth.user;
     if (!consumeQuota(notificationTests, String(current.id), 3, 60 * 60 * 1000)) return res.status(429).json({ code: "rate_limited" });
     try {
-      return res.json(await sendNotificationTest(current.email));
+      const locale = z.enum(["ar", "en"]).optional().parse(req.body?.locale) || "en";
+      return res.json(await sendNotificationTest(current.email, process.env, undefined, locale));
     } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({code:"validation"});
       return res.status(error instanceof Error && error.message === "not_configured" ? 503 : 502)
         .json({ code: error instanceof Error && (error.message === "not_configured" || (emailErrorCodes as readonly string[]).includes(error.message)) ? error.message : "email_delivery_failed" });
     }
@@ -141,9 +151,9 @@ export async function registerRoutes(
     });
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", async (req, res, next) => {
     try {
-      const email = z.string().email().parse(req.body.email).toLowerCase();
+      const email = z.string().trim().email().parse(req.body.email).toLowerCase();
       const password = z.string().min(1).max(128).parse(req.body.password);
       const challenge = await turnstile(req, req.body.turnstileToken);
       if (!challenge.ok) return res.status(403).json({ message: "Security verification required" });
@@ -181,7 +191,8 @@ export async function registerRoutes(
       setSessionCookie(res, token);
       res.json({ user: toAuthUser(user) });
     } catch (error: any) {
-      res.status(400).json({ message: "Please enter a valid email and password" });
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Please enter a valid email and password" });
+      next(error);
     }
   });
 
@@ -209,7 +220,7 @@ export async function registerRoutes(
     if (!consumeQuota(loginAttempts, `reset:${req.ip}`, 5, LOGIN_WINDOW_MS)) return res.status(429).json({ message: "Too many requests" });
     const challenge = await turnstile(req, req.body.turnstileToken);
     if (!challenge.ok) return res.status(403).json({ message: "Security verification required" });
-    const email = z.string().email().parse(req.body.email).toLowerCase();
+    const email = z.string().trim().email().parse(req.body.email).toLowerCase();
     const user = await storage.getUserByEmail(email);
     if (user && user.status === "active") {
       const token = oneTimeToken();
@@ -223,44 +234,26 @@ export async function registerRoutes(
     if (!consumeQuota(loginAttempts, `reset-password:${req.ip}`, 10, LOGIN_WINDOW_MS)) return res.status(429).json({ code: "limited" });
     if (!(await turnstile(req, req.body.turnstileToken)).ok) return res.status(403).json({ code: "security" });
     const token = z.string().min(20).max(200).parse(req.body.token); const password = z.string().min(12).max(128).parse(req.body.password);
-    const row = await storage.getResetToken(tokenHash(token));
-    if (!row || row.expiresAt <= new Date()) return res.status(400).json({ message: "Invalid or expired reset link" });
-    if (!await storage.consumeResetToken(row.id)) return res.status(400).json({ message: "Invalid or expired reset link" });
-    await storage.updateUser(row.userId, { passwordHash: await hashPasswordAsync(password) });
-    await storage.revokeAllSessions(row.userId);
+    if (!await completeAccountToken('reset', tokenHash(token), await hashPasswordAsync(password))) return res.status(400).json({ message: "Invalid or expired reset link" });
     res.json({ ok: true });
   });
   app.post("/api/auth/accept-invitation", async (req, res) => {
     if (!consumeQuota(loginAttempts, `accept-invitation:${req.ip}`, 10, LOGIN_WINDOW_MS)) return res.status(429).json({ code: "limited" });
     if (!(await turnstile(req, req.body.turnstileToken)).ok) return res.status(403).json({ code: "security" });
     const token = z.string().min(20).max(200).parse(req.body.token); const password = z.string().min(12).max(128).parse(req.body.password);
-    const invitation = await storage.getInvitation(tokenHash(token));
-    if (!invitation || invitation.expiresAt <= new Date()) return res.status(400).json({ message: "Invalid or expired invitation" });
-    const user = await storage.getUser(invitation.userId);
-    if (!user || user.role !== "student" || user.status !== "invited") {
-      return res.status(400).json({ message: "Invalid invitation" });
-    }
-    if (!await storage.consumeInvitation(invitation.id)) return res.status(400).json({ message: "Invalid or expired invitation" });
-    await storage.updateUser(user.id, {
-      passwordHash: await hashPasswordAsync(password),
-      emailVerifiedAt: new Date(),
-      status: "active",
-    });
+    if (!await completeAccountToken('invitation', tokenHash(token), await hashPasswordAsync(password))) return res.status(400).json({ message: "Invalid or expired invitation" });
     res.json({ ok: true });
   });
   app.post("/api/auth/verify-email", async (req, res) => {
-    const token = z.string().min(20).max(200).parse(req.body.token); const row = await storage.getVerificationToken(tokenHash(token));
-    if (!row || row.expiresAt <= new Date()) return res.status(400).json({ message: "Invalid or expired verification link" });
-    const verifyUser = await storage.getUser(row.userId);
-    if (!verifyUser || !["active", "invited"].includes(verifyUser.status) || !verifyUser.passwordHash) return res.status(400).json({ message: "This verification link is no longer valid" });
-    if (!await storage.consumeVerificationToken(row.id)) return res.status(400).json({ message: "Invalid or expired verification link" });
-    await storage.updateUser(row.userId, { emailVerifiedAt: new Date(), status: "active" }); res.json({ ok: true });
+    const token = z.string().min(20).max(200).parse(req.body.token);
+    if (!await completeAccountToken('verification', tokenHash(token))) return res.status(400).json({ message: "Invalid or expired verification link" });
+    res.json({ ok: true });
   });
   app.post("/api/auth/resend-verification", async (req, res) => {
     if (!consumeQuota(loginAttempts, `verify:${req.ip}`, 5, LOGIN_WINDOW_MS)) return res.status(429).json({ message: "Too many requests" });
     const challenge = await turnstile(req, req.body.turnstileToken);
     if (!challenge.ok) return res.status(403).json({ message: "Security verification required" });
-    const email = z.string().email().parse(req.body.email).toLowerCase();
+    const email = z.string().trim().email().parse(req.body.email).toLowerCase();
     const user = await storage.getUserByEmail(email);
     if (user && !user.emailVerifiedAt && user.passwordHash && ["active", "invited"].includes(user.status)) {
       const token = oneTimeToken();
@@ -279,7 +272,7 @@ export async function registerRoutes(
 
   app.post("/api/applications", async (req, res) => {
     const challenge = await turnstile(req, req.body.turnstileToken); if (!challenge.ok) return res.status(403).json({ message: "Security verification required" });
-    const data = z.object({ name: z.string().trim().min(2).max(200), email: z.string().email().transform(v => v.toLowerCase()), phone: z.string().max(30).optional(), country: z.string().max(100).optional(), timezone: z.string().max(80).refine(validTimezone).optional(), preferredLanguage: z.enum(["en", "ar", "English", "Arabic"]).optional(), ageGroup: z.enum(["child", "teenager", "adult"]), requestedProgram: z.string().trim().min(1).max(200), currentExperience: z.string().max(5000), learningGoals: z.string().max(5000), availability: z.string().max(5000).optional() }).parse(req.body);
+    const data = z.object({ name: z.string().trim().min(2).max(200), email: z.string().trim().email().transform(v => v.toLowerCase()), phone: z.string().max(30).optional(), country: z.string().max(100).optional(), timezone: z.string().max(80).refine(validTimezone).optional(), preferredLanguage: z.enum(["en", "ar", "English", "Arabic"]).optional(), ageGroup: z.enum(["child", "teenager", "adult"]), requestedProgram: z.string().trim().min(1).max(200), currentExperience: z.string().max(5000), learningGoals: z.string().max(5000), availability: z.string().max(5000).optional() }).parse(req.body);
     if (!data.country || !isSupportedCountry(data.country)) return res.status(400).json({code:'invalidCountry',fieldErrors:{country:'invalidCountry'}});
     const normalizedPhone = validateCountryPhone(data.country, data.phone || '');
     if (!normalizedPhone) return res.status(400).json({code:'invalidCountryPhone',fieldErrors:{phone:'invalidCountryPhone'}});

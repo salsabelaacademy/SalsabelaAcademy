@@ -19,7 +19,7 @@ import { useLanguage } from "@/hooks/use-language";
 
 export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
   const { user, refreshUser } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const { t } = useTranslation();
   const tr = (key: string) => t("p4." + key);
   const detail = (key: string) => t("refinement." + key);
@@ -139,8 +139,7 @@ export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
       onSaved();
       setSaved(true);
       setRevision((v) => v + 1);
-      if (values.preferredLanguage)
-        setLanguage(values.preferredLanguage as "ar" | "en");
+
     } catch (e) {
       setError(e instanceof Error ? e.message : "failed");
     } finally {
@@ -428,22 +427,7 @@ export function DashboardProfile({ onSaved }: { onSaved: () => void }) {
                     </select>
                     <small>{tr("timezoneExample")}</small>
                   </label>
-                  <label>
-                    {tr("preferredLanguage")}
-                    <select
-                      name="preferredLanguage"
-                      defaultValue={
-                        account.preferred_language === "ar"
-                          ? "ar"
-                          : account.preferred_language === "en"
-                            ? "en"
-                            : language
-                      }
-                    >
-                      <option value="ar">{tr("arabic")}</option>
-                      <option value="en">{tr("english")}</option>
-                    </select>
-                  </label>
+
                 </div>
               </fieldset>
               <fieldset>

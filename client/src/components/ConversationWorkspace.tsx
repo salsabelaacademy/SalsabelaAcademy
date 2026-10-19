@@ -1,7 +1,9 @@
+import { useIsMobile } from "@/hooks/use-mobile";
+import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import { AccountAvatar } from "./AccountAvatar";
 import { ServiceErrorNotice } from "./ServiceErrorNotice";
 import { conversationApi, conversationPeople } from "@/lib/dashboard-api";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type MutableRefObject } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,7 +12,7 @@ import {
   BookOpenCheck,
   MessageCircle,
   Search,
-  Trash2,
+  Trash2, MoreHorizontal, Maximize2, Download, X,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 type Person = {
@@ -28,6 +30,7 @@ type Message = {
   subject: string;
   body: string;
   created_at: string;
+  read_at?: string | null;
 };
 
 export function ConversationWorkspace({
@@ -35,7 +38,9 @@ export function ConversationWorkspace({
   focusId,
   initialRecipientId,
   onBack,
-}: { initialAI?: boolean; focusId?: number; initialRecipientId?: number; onBack?: () => void } = {}) {
+  drafts, onClose, onExpand, expanded = false,
+}: { initialAI?: boolean; focusId?: number; initialRecipientId?: number; onBack?: () => void; drafts?: MutableRefObject<Record<string, {text: string; requestKey: string}>>; onClose?: () => void; onExpand?: () => void; expanded?: boolean } = {}) {
+  const isMobile = useIsMobile();
   const { user } = useAuth(),
     { t, i18n } = useTranslation(),
     tr = (k: string) => t("dashboardUpdate." + k),
@@ -46,9 +51,11 @@ export function ConversationWorkspace({
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<Error | null>(null),
-    [key, setKey] = useState(() => crypto.randomUUID()),
+    [key, setKey] = useState<string>(() => crypto.randomUUID()),
     [older, setOlder] = useState<Message[]>([]),
     [hasOlder, setHasOlder] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false), [messageSearch, setMessageSearch] = useState(""), [exporting, setExporting] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null),
     autoSelected = useRef(false);
   const openedRecipient = useRef<number>();
@@ -88,6 +95,15 @@ export function ConversationWorkspace({
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
+  const draftId = ai ? 'assistant' : selected ? String(selected) : '';
+  useEffect(() => {
+    const draft = drafts?.current[draftId];
+    setText(draft?.text || '');
+    setKey(draft?.requestKey || crypto.randomUUID());
+    setOlder([]);
+    setHasOlder(true);
+    setError(null);
+  }, [draftId, drafts]);
   const messages = Array.from(
     new Map(
       [...older, ...(chat.data?.messages || [])].map((m) => [m.id, m]),
@@ -112,13 +128,13 @@ export function ConversationWorkspace({
     }
   }, [people.data, selected, user?.role]);
   useEffect(() => {
-    if (ai || !selected || !other?.unread || document.hidden) return;
-    void conversationApi("/conversations/" + selected + "/read", "POST")
+    if (ai || !selected || !other?.unread || document.hidden || !chat.isSuccess || chat.isFetching || !chat.data.messages.length) return;
+    void conversationApi("/conversations/" + selected + "/read", "POST", { throughId: chat.data.messages.at(-1)!.id })
       .then(() =>
         client.invalidateQueries({ queryKey: ["conversations", user?.id] }),
       )
       .catch(() => {});
-  }, [selected, other?.unread, chat.data, ai, client]);
+  }, [selected, other?.unread, chat.data, chat.isSuccess, chat.isFetching, ai, client]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
   }, [chat.data?.messages.at(-1)?.id, answers.length]);
@@ -146,8 +162,7 @@ export function ConversationWorkspace({
     setOlder([]);
     setHasOlder(true);
     setError(null);
-    setText("");
-    setKey(crypto.randomUUID());
+    if (id !== selected || ai) { setText(""); setKey(crypto.randomUUID()); }
   };
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -172,20 +187,47 @@ export function ConversationWorkspace({
           requestKey: key,
         });
         if (!Number.isInteger(result?.id) || result.id <= 0) throw Error("api_response_invalid");
-        await Promise.all([
+        // Render the server-confirmed row immediately; a failed refresh must not turn a saved message into a send error.
+        if (result.body === text.trim() && result.sender_id === user?.id && result.recipient_id === selected) {
+          client.setQueryData<{messages: Message[];hasMore:boolean}>(["conversation", user?.id, selected], previous => previous ? { ...previous, messages: [...previous.messages.filter(m => m.id !== result.id), result].sort((a,b) => a.id-b.id) } : previous);
+        }
+        void Promise.all([
           client.invalidateQueries({
             queryKey: ["conversation", user?.id, selected],
           }),
           client.invalidateQueries({ queryKey: ["conversations", user?.id] }),
-        ]);
+        ]).catch(() => {});
         setKey(crypto.randomUUID());
       }
+      if (drafts) delete drafts.current[draftId];
       setText("");
     } catch (e) {
       setError(e instanceof Error ? e : new Error("failed"));
     } finally {
       setBusy(false);
     }
+  }
+  async function downloadTranscript() {
+    if (!selected || exporting) return;
+    setExporting(true); setError(null);
+    try {
+      const stored = new Map<number, Message>();
+      let before: number | undefined;
+      for (let page = 0; ; page++) {
+        if (page >= 100) throw Error("service_unavailable");
+        const result = await conversationApi("/conversations/" + selected + (before ? "?before=" + before : ""));
+        if (!Array.isArray(result.messages) || typeof result.hasMore !== "boolean") throw Error("api_response_invalid");
+        for (const m of result.messages) stored.set(m.id, m);
+        if (!result.hasMore) break;
+        const next = result.messages[0]?.id;
+        if (!next || (before && next >= before)) throw Error("api_response_invalid");
+        before = next;
+      }
+      const lines = Array.from(stored.values()).sort((a,b) => a.id-b.id).map(m => `[${new Date(m.created_at).toISOString()}] ${m.sender_id === user?.id ? user.name : other?.name || ""}\n${m.body}\n`);
+      const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }));
+      const link = document.createElement("a"); link.href = url; link.download = `salsabela-conversation-${selected}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setError(e instanceof Error ? e : new Error("failed")); }
+    finally { setExporting(false); }
   }
   async function loadOlder() {
     if (busy || !messages.length) return;
@@ -215,11 +257,11 @@ export function ConversationWorkspace({
           <small>{tr("live")}</small>
         </header>
         <button
+          disabled={busy}
           className={"conversation-ai" + (ai ? " is-active" : "")}
           onClick={() => {
             setAi(true);
             setError(null);
-            setText("");
           }}
         >
           <BookOpenCheck size={19} aria-hidden />
@@ -235,6 +277,7 @@ export function ConversationWorkspace({
           />
         </label>
         <div className="conversation-people">
+          {people.isSuccess && !!people.data?.length && !people.data.some(p => p.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())) && <p role="status">{t('reviewFix.noMatches')}</p>}
           {people.isPending ? (
             <p>{t("p4.loading")}</p>
           ) : people.isError ? (
@@ -298,6 +341,7 @@ export function ConversationWorkspace({
           <>
             <header className="conversation-heading">
               <button
+                disabled={busy}
                 className="conversation-back"
                 onClick={() => {
                   if (onBack) {
@@ -338,6 +382,12 @@ export function ConversationWorkspace({
                 <h3>{ai ? tr("assistant") : other?.name}</h3>
                 <small>{ai ? tr("aiIntro") : tr("live")}</small>
               </div>
+              {!ai && <Dropdown.Root dir={i18n.dir()} open={toolsOpen} onOpenChange={setToolsOpen}><Dropdown.Trigger asChild><button type="button" className="conversation-more" aria-label={t("communication.chatTools")}><MoreHorizontal size={20} /></button></Dropdown.Trigger><Dropdown.Portal><Dropdown.Content className="conversation-menu" align="end" sideOffset={8} onEscapeKeyDown={event => { event.preventDefault(); event.stopPropagation(); setToolsOpen(false); }}>
+                {!isMobile && onExpand && <Dropdown.Item data-testid="conversation-expand" onSelect={onExpand}><Maximize2 size={16}/>{t("communication." + (expanded ? "restoreChat" : "expandChat"))}</Dropdown.Item>}
+                <Dropdown.Item data-testid="conversation-search-action" onSelect={() => setSearchOpen(v => !v)}><Search size={16}/>{t("communication.searchMessages")}</Dropdown.Item>
+                <Dropdown.Item data-testid="conversation-download" disabled={exporting} onSelect={() => void downloadTranscript()}><Download size={16}/>{t("communication.downloadTranscript")}</Dropdown.Item>
+              </Dropdown.Content></Dropdown.Portal></Dropdown.Root>}
+              {onClose && <button type="button" className="conversation-close" onClick={onClose} aria-label={t("p4.close")}><X size={19}/></button>}
               {ai && (
                 <button
                   onClick={() => setAnswers([])}
@@ -348,6 +398,7 @@ export function ConversationWorkspace({
                 </button>
               )}
             </header>
+            {searchOpen && !ai && <label className="conversation-message-search"><Search size={17}/><span className="sr-only">{t("communication.searchMessages")}</span><input type="search" name="conversationSearch" value={messageSearch} onChange={e => setMessageSearch(e.target.value)} placeholder={t("communication.searchMessages")} autoFocus/><button type="button" onClick={() => {setSearchOpen(false);setMessageSearch("");}} aria-label={t("p4.close")}><X size={16}/></button></label>}
             <div
               className="conversation-log"
               role="log"
@@ -405,7 +456,7 @@ export function ConversationWorkspace({
                         {tr("older")}
                       </button>
                     )}
-                    {messages.map((message) => (
+                    {messages.filter(message => !messageSearch || message.body.toLocaleLowerCase().includes(messageSearch.toLocaleLowerCase())).map((message) => (
                       <article
                         className={
                           "chat-bubble " +
@@ -423,6 +474,7 @@ export function ConversationWorkspace({
                             { dateStyle: "short", timeStyle: "short" },
                           )}
                         </time>
+                        {message.sender_id === user?.id && <small className="chat-receipt">{t(message.read_at ? 'reviewFix.read' : 'reviewFix.sent')}</small>}
                       </article>
                     ))}
                   </>
@@ -432,11 +484,15 @@ export function ConversationWorkspace({
             </div>
             {error && <ServiceErrorNotice error={error} ai={ai} />}
             <form className="conversation-compose" onSubmit={submit}>
-              <textarea
+              <textarea name="message"
                 aria-label={tr("message")}
                 placeholder={tr("message")}
                 value={text}
-                onChange={(e) => { setText(e.target.value); setKey(crypto.randomUUID()); }}
+                onChange={(e) => {
+                  const requestKey = crypto.randomUUID();
+                  setText(e.target.value); setKey(requestKey);
+                  if (drafts && draftId) drafts.current[draftId] = {text: e.target.value, requestKey};
+                }}
                 rows={2}
                 maxLength={ai ? 2000 : 5000}
                 disabled={busy}

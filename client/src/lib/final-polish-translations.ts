@@ -1,6 +1,6 @@
 export const finalPolishTranslations = {
   en: {
-    message_storage_error:"The database could not save your message. Your draft is preserved; the administrator can run the safe storage check.",
+    message_storage_error:"Your message could not be sent. Your draft is still here; please try again.",
     api_endpoint_missing:
       "This API route is missing on the running server. Deploy the matching backend files and restart the app.",
     api_response_invalid:
@@ -15,7 +15,7 @@ export const finalPolishTranslations = {
     origin_rejected:
       "The server rejected the page origin. Configure the exact HTTPS app address in the allowed origins; do not disable origin protection.",
     service_unavailable:
-      "The server returned an error. Open connection diagnostics and check server logs.",
+      "We could not complete this request. Please try again.",
     diagnostics: "Connection diagnostics",
     diagnosticHint:
       "Safe checks of this running server. No credentials are shown.",
@@ -53,7 +53,7 @@ export const finalPolishTranslations = {
       "Verify the sending domain in Resend and restart the app after updating server settings.",
   },
   ar: {
-    message_storage_error:"تعذّر حفظ رسالتك في قاعدة البيانات. بقيت مسودتك؛ يمكن للمدير إجراء فحص الحفظ الآمن.",
+    message_storage_error:"تعذر إرسال رسالتك الآن. مسودتك محفوظة هنا؛ حاول الإرسال مرة أخرى.",
     api_endpoint_missing:
       "مسار الخدمة غير موجود في الخادم الحالي. ارفع ملفات الخادم المطابقة للتحديث ثم أعد تشغيل التطبيق.",
     api_response_invalid:
@@ -67,7 +67,7 @@ export const finalPolishTranslations = {
     origin_rejected:
       "رفض الخادم عنوان الصفحة. أضف عنوان التطبيق HTTPS الصحيح إلى العناوين المسموح بها، ولا تعطّل حماية المصدر.",
     service_unavailable:
-      "أعاد الخادم خطأ. افتح تشخيص الاتصال وراجع سجل الخادم.",
+      "تعذر إتمام الطلب الآن. حاول مرة أخرى.",
     diagnostics: "تشخيص الاتصال",
     diagnosticHint: "فحص آمن للخادم الجاري تشغيله؛ لا تظهر أي مفاتيح.",
     check_schema: "تحديثات قاعدة البيانات",

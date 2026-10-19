@@ -23,18 +23,20 @@ export function installMutationNotifications() {
     const value = await response
       .clone()
       .json()
-      .catch(() => ({}));
+      .catch(() => null);
+    if (response.ok && response.status !== 204 && (!value || typeof value !== "object")) return response;
     // Conversation bubbles and inline errors already confirm delivery; avoid covering the phone header.
     if (/^\/api\/conversations\/\d+$/.test(url.pathname)) {
       if (response.ok) window.dispatchEvent(new Event("academy:data-changed"));
       return response;
     }
+    if (url.pathname === "/api/portal/preferences") return response;
     // The storage probe is a rolled-back check, not an academy mutation.
     if (url.pathname === "/api/admin/conversations/check") return response;
     if (response.ok) {
       if (
         url.pathname === "/api/admin/email-deliveries/retry" &&
-        value.count === 0
+        value?.count === 0
       )
         return response;
       window.dispatchEvent(new Event("academy:data-changed"));
@@ -44,9 +46,9 @@ export function installMutationNotifications() {
         )
       )
         return response;
-      const key = value.url
+      const key = value?.url
         ? "opened"
-        : value.queued
+        : value?.queued
           ? "queued"
           : url.pathname.includes("/conversations/")
             ? "sent"
@@ -58,7 +60,7 @@ export function installMutationNotifications() {
       toast({
         title: i18n.t("dashboardUpdate." + key),
         description:
-          value.emailDelivery === false
+          value?.emailDelivery === false
             ? i18n.t("p4.emailUnavailable")
             : undefined,
         duration: 4000,
