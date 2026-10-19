@@ -1,3 +1,4 @@
+import { notificationPolicyCopy } from '@shared/notification-policy';
 import { reviewFixTranslations } from './review-fix-translations';
 import { lessonMail } from '@shared/lesson-mail';
 import {communicationTranslations} from "./communication-translations";
@@ -27,3 +28,5 @@ for (const language of ['en','ar'] as const) { (resources[language].translation 
 for (const lang of ['en','ar'] as const) { const r=resources[lang].translation as any; r.lessonMail=lessonMail[lang]; Object.assign(r.p4,{notify_reminder_before:lessonMail[lang].before,notify_reminder_start:lessonMail[lang].start,notify_report:lessonMail[lang].report,notify_issue:lessonMail[lang].issue}); }
 i18n.use(initReactI18next).init({showSupportNotice:false,resources,lng:typeof window!=='undefined' && /^\/ar(?:\/|$)/.test(window.location.pathname)?'ar':'en',fallbackLng:'en',interpolation:{escapeValue:false},saveMissing:import.meta.env?.DEV,missingKeyHandler:(_l,_n,key)=>{if(import.meta.env?.DEV) console.warn('Missing translation:',key);}});
 export default i18n;
+
+for(const lang of ['en','ar'] as const){const r=resources[lang].translation as any;r.p4.notify_security_login=notificationPolicyCopy[lang].login;r.p4.notify_security_password=notificationPolicyCopy[lang].password;r.preferences.emailHint=notificationPolicyCopy[lang].emailHint;r.preferences.security=notificationPolicyCopy[lang].security;}

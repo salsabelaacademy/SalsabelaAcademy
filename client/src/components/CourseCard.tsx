@@ -63,7 +63,7 @@ export function CourseCard({ course }: CourseCardProps) {
                 {isRTL && course.price === "Based on package" ? "حسب الباقة" : course.price}
               </p>
             </div>
-            <Link href={`/contact?tab=enroll&course=${encodeURIComponent(course.title)}`}>
+            <Link href={`/contact?tab=enroll&course=${encodeURIComponent(course.title)}#enrollment-form`}>
               <Button variant="ghost" className="text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-primary/5 p-0 h-auto font-medium">
                 {t("courses.enroll")} <ArrowRight className={`w-4 h-4 ${isRTL ? "mr-2 rotate-180" : "ml-2"}`} />
               </Button>

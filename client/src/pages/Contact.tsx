@@ -1,6 +1,6 @@
 import { PageBackdrop } from "@/components/PageBackdrop";
 import TurnstileWidget, {useTurnstileConfig} from "@/components/TurnstileWidget";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useForm } from "react-hook-form";
@@ -202,11 +202,25 @@ export default function Contact() {
   const { isRTL } = useLanguage();
   const { data: courses = [] } = useCourses();
 
-  const searchParams = new URLSearchParams(useSearch());
+  const search = useSearch();
+  const searchParams = new URLSearchParams(search);
+  const formPanel = useRef<HTMLDivElement>(null);
   const initialTab = searchParams.get("tab") === "enroll" ? "enroll" : "trial";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab as Tab);
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => { setActiveTab(initialTab); setSubmitted(false); }, [initialTab]);
+
+  useEffect(() => {
+    if (new URLSearchParams(search).get('tab') !== 'enroll') return;
+    // Wait for the routed form layout, after the global route scroll reset.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        formPanel.current?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+        formPanel.current?.focus({preventScroll:true});
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [search]);
 
   const userTimezone = useMemo(() => {
     try {
@@ -298,7 +312,7 @@ export default function Contact() {
             </div>
 
             {/* Right form panel */}
-            <div className="lg:col-span-3">
+            <div id="enrollment-form" ref={formPanel} tabIndex={-1} className="lg:col-span-3">
               <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 overflow-hidden">
 
                 {/* Tabs */}

@@ -1,3 +1,4 @@
+import { safeSecurityNotice } from './security-notifications';
 import { registerLessonEntryRoutes } from './lesson-entry';
 import { completeAccountToken } from './account-tokens';
 import {emailErrorCodes} from "./email-errors";
@@ -189,6 +190,7 @@ export async function registerRoutes(
         lockedUntil: null,
       });
       const token = await issueToken(user);
+      await safeSecurityNotice(user.id, 'login');
       loginAttempts.delete(loginKey);
       setSessionCookie(res, token);
       res.json({ user: toAuthUser(user) });
@@ -269,7 +271,7 @@ export async function registerRoutes(
     const current = z.string().min(1).max(128).parse(req.body.currentPassword); const password = z.string().min(12).max(128).parse(req.body.password);
     const user = await storage.getUser((req as any).auth.user.id);
     if (!user || !(await verifyPasswordAsync(current, user.passwordHash))) return res.status(400).json({ message: "Current password is incorrect" });
-    await storage.updateUser(user.id, { passwordHash: await hashPasswordAsync(password) }); await storage.revokeAllSessions(user.id); res.json({ ok: true });
+    await storage.updateUser(user.id, { passwordHash: await hashPasswordAsync(password) }); await storage.revokeAllSessions(user.id); await safeSecurityNotice(user.id, 'password'); res.json({ ok: true });
   });
 
   app.post("/api/applications", async (req, res) => {

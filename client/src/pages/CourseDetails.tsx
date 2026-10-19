@@ -302,7 +302,7 @@ export default function CourseDetails() {
                     {t("courses.free_trial")}
                   </Button>
                 </Link>
-                <Link href={`/contact?tab=enroll&course=${encodeURIComponent(course.title)}`}>
+                <Link href={`/contact?tab=enroll&course=${encodeURIComponent(course.title)}#enrollment-form`}>
                   <Button size="lg" className="px-8 h-14 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                     {t("courses.enroll")}
                   </Button>

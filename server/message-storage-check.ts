@@ -22,9 +22,8 @@ export async function checkMessageStorage(db: SqlConnection, includeRoutineMetad
     const notice = (await db.query("SELECT id FROM notifications WHERE user_id=$1 AND id>$2 AND title='notify_message' ORDER BY id DESC LIMIT 1", [student.id, previous])).rows[0];
     if (!notice) return { ok: false, rolledBack: true, issue: { stage, code: "notification_pipeline_missing", table: undefined, column: undefined, constraint: undefined } };
     stage = "email_pipeline";
-    const preference = (await db.query("SELECT email_updates FROM account_preferences WHERE user_id=$1", [student.id])).rows[0];
     const queued = (await db.query("SELECT id FROM email_deliveries WHERE notification_id=$1", [notice.id])).rows.length;
-    if (preference?.email_updates !== false && !queued) return { ok: false, rolledBack: true, issue: { stage, code: "email_pipeline_missing", table: undefined, column: undefined, constraint: undefined } };
+    if (queued) return { ok: false, rolledBack: true, issue: { stage, code: "notification_channel_migration_required", table: undefined, column: undefined, constraint: undefined } };
     stage = "deferred_constraints";
     await db.query("SET CONSTRAINTS ALL IMMEDIATE");
     return { ok: true, rolledBack: true };

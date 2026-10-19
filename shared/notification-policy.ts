@@ -1,0 +1,11 @@
+/** Server-controlled delivery policy. Unknown events never become unsolicited email. */
+export const importantEmailTitles = ['notify_assessment','notify_enrollment','notify_report','notify_issue','notify_reminder_before','notify_reminder_start','notify_application','notify_contact','notify_security_login','notify_security_password'] as const;
+export function securityNotification(title: string) {return title==='notify_security_login'||title==='notify_security_password';}
+export function emailNotificationAllowed(title: string, context: any = {}) {
+  if(title==='notify_lesson')return ['scheduled','rescheduled','cancelled'].includes(context?.change);
+  return (importantEmailTitles as readonly string[]).includes(title);
+}
+export const notificationPolicyCopy = {
+ en:{login:'Successful account sign-in',loginBody:'A successful sign-in to your academy account was recorded. If this was not you, reset your password and contact the academy. This notice is limited to once every 24 hours; it does not identify a new device.',password:'Your password has changed',passwordBody:'Your academy password was changed and existing sessions were revoked. If you did not make this change, reset your password and contact the academy.',account:'Review my account',time:'Time',emailHint:'Email is reserved for lesson schedules, reminders, reports and important academy updates. Conversations appear in the academy and on enabled devices, without email.',security:'Invitations, reset links and account security notices remain enabled. Ordinary sign-in notices are limited to once in 24 hours.'},
+ ar:{login:'تسجيل دخول ناجح إلى حسابك',loginBody:'سُجّل دخول ناجح إلى حسابك في الأكاديمية. إذا لم تكن أنت، أعد تعيين كلمة المرور وتواصل مع الأكاديمية. يصل هذا التنبيه مرة واحدة كحد أقصى خلال 24 ساعة، ولا يعني بالضرورة الدخول من جهاز جديد.',password:'تم تغيير كلمة مرور حسابك',passwordBody:'تغيّرت كلمة مرور حسابك في الأكاديمية وأُلغيت الجلسات السابقة. إذا لم تُجرِ هذا التغيير، أعد تعيين كلمة المرور وتواصل مع الأكاديمية.',account:'مراجعة حسابي',time:'الوقت',emailHint:'البريد لمواعيد الحصص وتذكيراتها والتقارير وتحديثات الأكاديمية المهمة. المحادثات تظهر داخل الأكاديمية وعلى الأجهزة المفعّل عليها الإشعارات، دون بريد.',security:'تبقى الدعوات وروابط استعادة الحساب وتنبيهات أمانه مفعّلة. تنبيه تسجيل الدخول يصل مرة واحدة كحد أقصى خلال 24 ساعة.'},
+};

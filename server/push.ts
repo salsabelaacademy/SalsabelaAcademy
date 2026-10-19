@@ -1,3 +1,5 @@
+import { lessonDashboard } from '../shared/lesson-links';
+import { securityNotification } from '../shared/notification-policy';
 import { reminderDeliveryState } from './lesson-reminders';
 import type { Express, RequestHandler } from 'express';
 import { z } from 'zod';
@@ -35,7 +37,14 @@ export function registerPushRoutes(app: Express, limit: RequestHandler) {
     try { const value = z.object({endpoint}).strict().parse(req.body); await pool.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND endpoint=$2',[(req as any).auth.user.id,value.endpoint]); res.json({subscribed:false}); } catch(error){next(error);}
   });
 }
-export async function deliverPush(subscription: webpush.PushSubscription, payload: {id:number;language:string}, send = webpush.sendNotification, ttl = 3600) {
+export function pushPayload(row: any, id: number) {
+  const language=row.language==='ar'?'ar':'en',role=row.role==='admin'?'admin':'student',ctx=row.context||{};
+  const category=row.title==='notify_message'?'message':securityNotification(row.title)?'security':row.title==='notify_report'?'report':row.title?.startsWith('notify_reminder_')||row.title==='notify_lesson'||row.title==='notify_assessment'||row.title==='notify_issue'?'lesson':'academy';
+  const validLesson=String(ctx.lessonId||'').match(/^[1-9]\d{0,9}$/);
+  const url=validLesson?lessonDashboard(ctx.lessonId,role,language):(language==='ar'?'/ar':'')+'/dashboard/'+role+'?tab='+(category==='message'?'messages':category==='security'?'settings':'notifications');
+  return {id,language,category,url};
+}
+export async function deliverPush(subscription: webpush.PushSubscription, payload: {id:number;language:string;category?:string;url?:string}, send = webpush.sendNotification, ttl = 3600) {
   return send(subscription, JSON.stringify(payload), {vapidDetails:{subject:process.env.WEB_PUSH_SUBJECT!,publicKey:process.env.WEB_PUSH_PUBLIC_KEY!,privateKey:process.env.WEB_PUSH_PRIVATE_KEY!},TTL:ttl,timeout:10000});
 }
 export function startPushWorker() {
@@ -48,11 +57,11 @@ export function startPushWorker() {
         // Atomic lease supports multiple application instances; crashed jobs become eligible again.
         const result=await pool.query(`UPDATE push_deliveries SET attempts=attempts+1,next_attempt=now()+interval '2 minutes' WHERE id=(SELECT id FROM push_deliveries WHERE status='pending' AND attempts<5 AND next_attempt<=now() ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`);
         const job=result.rows[0]; if(!job) break;
-        const {rows}=await pool.query(`SELECT s.*,n.user_id AS recipient,n.context,u.role FROM push_subscriptions s JOIN notifications n ON n.id=$1 JOIN users u ON u.id::text=s.user_id::text WHERE s.id=$2 AND s.user_id::text=n.user_id::text AND u.status='active' AND n.created_at > now()-interval '24 hours'`,[job.notification_id,job.subscription_id]);
+        const {rows}=await pool.query(`SELECT s.*,n.user_id AS recipient,n.context,n.title,u.role FROM push_subscriptions s JOIN notifications n ON n.id=$1 JOIN users u ON u.id::text=s.user_id::text WHERE s.id=$2 AND s.user_id::text=n.user_id::text AND u.status='active' AND n.created_at > now()-interval '24 hours'`,[job.notification_id,job.subscription_id]);
         const sub=rows[0];
         if(!sub || !allowedPushEndpoint(sub.endpoint) || !(await reminderDeliveryState(sub)).eligible){await pool.query("UPDATE push_deliveries SET status='skipped' WHERE id=$1",[job.id]);continue;}
         try {
-          await deliverPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},{id:job.notification_id,language:sub.language},webpush.sendNotification,sub.context?.kind==='lesson_reminder_start'?120:sub.context?.kind==='lesson_reminder_before'?Math.max(1,Math.min(600,Math.ceil((Date.parse(sub.context.startsAt)-Date.now())/1000))):3600);
+          await deliverPush({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},pushPayload(sub,job.notification_id),webpush.sendNotification,sub.context?.kind==='lesson_reminder_start'?120:sub.context?.kind==='lesson_reminder_before'?Math.max(1,Math.min(600,Math.ceil((Date.parse(sub.context.startsAt)-Date.now())/1000))):3600);
           await pool.query("UPDATE push_deliveries SET status='sent',last_error=NULL WHERE id=$1",[job.id]);
         } catch(error) {
           const status=Number((error as {statusCode?:number}).statusCode || 0);

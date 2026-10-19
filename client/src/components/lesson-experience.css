@@ -1,15 +1,16 @@
-.academy-language-toggle {gap:7px!important;min-height:44px;border:1px solid hsl(var(--border))!important;border-radius:13px!important;background:hsl(var(--card))!important;color:hsl(var(--foreground))!important;padding:8px 11px!important;box-shadow:0 2px 8px #061b2b05}
+.academy-language-toggle {gap:7px!important;min-height:44px;border:1px solid hsl(var(--border))!important;border-radius:13px!important;background:transparent!important;color:inherit!important;padding:8px 11px!important;box-shadow:none}
 .academy-language-toggle[data-state=open] {border-color:hsl(var(--primary))!important}
 .academy-language-menu {z-index:400;min-width:190px;padding:7px;border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));color:hsl(var(--foreground));box-shadow:0 18px 55px #061b2b2b}
 .academy-language-menu [role=group] {display:grid;gap:3px}
 .academy-language-menu [data-radix-collection-item] {display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:46px;padding:10px 12px;border-radius:10px;cursor:pointer;outline:none;font-size:14px}
 .academy-language-menu [data-state=checked] {background:hsl(var(--muted));font-weight:600;color:hsl(var(--primary))}
 .academy-language-menu [data-highlighted] {background:hsl(var(--muted));outline:2px solid hsl(var(--ring));outline-offset:-2px}
-.academy-language-menu>div:first-child:not([role=group]) {font-size:12px;padding:8px 12px;color:hsl(var(--muted-foreground))}
-.academy-theme-toggle {display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid hsl(var(--border));border-radius:13px;background:hsl(var(--card));color:hsl(var(--foreground));flex-shrink:0;transition:background .18s,border-color .18s}
-.academy-theme-toggle:hover {background:hsl(var(--muted));border-color:hsl(var(--primary))}
-.theme-orbit {display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#987020;background:#b28b3912}
-.theme-orbit-dark {background:#90bfd615;color:#b8dbed}
+.academy-theme-toggle {display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid hsl(var(--border));border-radius:13px;background:transparent!important;color:inherit;box-shadow:none!important;flex-shrink:0;transition:background .18s,border-color .18s}
+.academy-theme-toggle:hover,.academy-language-toggle:hover {background:#31856812!important;border-color:#31856855!important}
+.dark .academy-theme-toggle:hover,.dark .academy-language-toggle:hover {background:#7bcbb514!important;border-color:#7bcbb555!important}
+.dash-topbar .academy-theme-toggle {border-color:var(--dash-border);color:var(--dash-text)}
+.theme-orbit {display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#987020;background:transparent}
+.theme-orbit-dark {background:transparent;color:#b8dbed}
 .academy-theme-toggle:focus-visible,.academy-language-toggle:focus-visible {outline:3px solid hsl(var(--ring));outline-offset:3px}
 .academy-course-detail-hero>.academy-page-backdrop {height:660px;max-height:none;mask-image:linear-gradient(#000 0%,#000 35%,transparent 100%);-webkit-mask-image:linear-gradient(#000 0%,#000 35%,transparent 100%)}
 .academy-course-detail-hero>.academy-page-backdrop img {object-position:center 45%;opacity:.18}
@@ -38,3 +39,6 @@
 .academy-detail-sheet .followup-history-item h4 {font-size:15px;font-weight:600;line-height:1.8}
 @media(max-width:600px){.academy-course-detail-hero>.academy-page-backdrop{height:560px}.academy-language-toggle{font-size:13px!important;padding-inline:9px!important}}
 @media(prefers-reduced-motion:reduce){.academy-theme-toggle,.public-menu-link{transition:none}}
+
+/* The page already reserves 100px through html scroll-padding-top. */
+#enrollment-form {scroll-margin-top:16px;outline:none}

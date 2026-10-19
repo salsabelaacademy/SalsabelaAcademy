@@ -1,3 +1,4 @@
+import { insertSecurityNotice } from './security-notifications';
 import { pool } from './db';
 
 type TokenKind = 'invitation' | 'reset' | 'verification';
@@ -36,6 +37,7 @@ export async function completeAccountToken(kind: TokenKind, hash: string, passwo
     }
     await client.query(`UPDATE ${table} SET ${used}=now() WHERE user_id=$1 AND ${used} IS NULL`, [token.user_id]);
     if (kind !== 'verification') await client.query('UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [token.user_id]);
+    if (kind === 'reset') await insertSecurityNotice(client, token.user_id, 'password');
     await client.query('COMMIT');
     return true;
   } catch (error) {

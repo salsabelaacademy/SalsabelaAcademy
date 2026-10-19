@@ -13,6 +13,7 @@ export function safeLessonReturn(value: string | null): string | undefined {
     if (url.origin !== "https://academy.invalid" || url.hash) return;
     if (/^\/(ar\/)?dashboard\/(admin|student)$/.test(url.pathname)) {
       const keys = Array.from(url.searchParams.keys());
+      if(keys.length===1 && ["messages","notifications","settings"].includes(url.searchParams.get("tab") || ""))return url.pathname + url.search;
       if (keys.length === 2 && keys.every(k => ["tab","focus"].includes(k)) &&
           url.searchParams.get("tab") === "lessons" && /^lesson:[1-9]\d{0,9}$/.test(url.searchParams.get("focus") || ""))
         return url.pathname + url.search;

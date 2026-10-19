@@ -1,3 +1,4 @@
+import { emailNotificationAllowed, securityNotification, notificationPolicyCopy } from '../shared/notification-policy';
 import { emailErrorCode, emailErrorCodes } from "./email-errors";
 import { Resend } from "resend";
 import { pool } from "./db";
@@ -64,6 +65,11 @@ export function notificationEmail(row: any, origin: string) {
     new Intl.DateTimeFormat(lang, { timeZone: zone });
   } catch {
     zone = "UTC";
+  }
+  if(securityNotification(row.title)) {
+    const copy=notificationPolicyCopy[lang];const login=row.title==='notify_security_login';
+    const title=login?copy.login:copy.password;
+    return {subject:title,...brandedEmail({title,body:login?copy.loginBody:copy.passwordBody,language:lang,name:row.name,url:origin+(ar?'/ar':'')+'/dashboard/'+(row.role==='admin'?'admin':'student')+'?tab=settings',button:copy.account,details:ctx.occurredAt?[{label:copy.time,value:new Intl.DateTimeFormat(lang,{timeZone:zone,dateStyle:'full',timeStyle:'short'}).format(new Date(ctx.occurredAt))}]:[]},origin)};
   }
   const details = [];
   if (ctx.startsAt) {
@@ -154,7 +160,7 @@ export async function processEmailJob(
     );
     const row = result.rows[0];
     const reminderState = row ? await reminderDeliveryState(row) : {eligible:false,canJoin:false};
-    if (!row || row.status !== "active" || !row.enabled || !reminderState.eligible) {
+    if (!row || row.status !== "active" || (!row.enabled && !securityNotification(row.title)) || !emailNotificationAllowed(row.title,row.context) || !reminderState.eligible) {
       await pool.query(
         "UPDATE email_deliveries SET status='skipped' WHERE id=$1",
         [job.id],
