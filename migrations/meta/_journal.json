@@ -99,6 +99,13 @@
       "when": 1792429388379,
       "tag": "0013_email_outbox_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792429448379,
+      "tag": "0014_email_identifier_compatibility",
+      "breakpoints": true
     }
   ]
 }
